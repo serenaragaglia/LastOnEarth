@@ -1,7 +1,7 @@
 import * as THREE from 'https://esm.sh/three@0.161.0';
 import {getControls, collsionManagement} from './controls.js';
 import {scene} from './main.js';
-import {COLORS, buildingsList, BULLETSPEED} from './constants.js';
+import {COLORS, buildingsList, BULLETSPEED, PLAYER} from './constants.js';
 
 export const bullets = [];
 export const zombies = [];
@@ -43,6 +43,8 @@ export function spawnZombie(position) {
     new THREE.BoxGeometry(size, size, size),
     new THREE.MeshStandardMaterial({ color: 0x00ff00 })
   );
+  const axes = new THREE.AxesHelper(10);
+  zombieMesh.add(axes);
 
   zombieMesh.position.copy(position);
   zombieMesh.name = 'zombie';
@@ -53,7 +55,8 @@ export function spawnZombie(position) {
     size: { x: size, z: size },
     speed: 2,
     life: 10,
-    alert: false
+    alert: false,
+    lastHitCooldown : 0
   };
 
   zombies.push(zombie);
@@ -62,7 +65,6 @@ export function spawnZombie(position) {
 export function updateZombies(delta){
   for(let i = zombies.length - 1; i >= 0; i--){
     const zombie = zombies[i];
-    console.log('Zombie Size', zombie.size);
     if(zombie.life == 0){
       scene.remove(zombie.mesh);
       zombies.splice(i, 1);
@@ -90,9 +92,9 @@ export function updateZombies(delta){
         const zombieFuturePos = zombie.mesh.position.clone().addScaledVector(dir, zombie.speed * delta);
         zombieFuturePos.y = 0;
         let collide = collsionManagement(zombieFuturePos, buildingsList, zombie.size);
-        if(!collide){
+        if((zombieFuturePos.distanceTo(playerPos) > 3) && (!collide)){
           zombie.mesh.position.copy(zombieFuturePos);
-        }        
+        }
       }
       zombie.mesh.lookAt(playerPos);
 
@@ -117,6 +119,36 @@ export function spawnRandomZombies(count) {
   }
 }
 
+export function handleZombiePlayerDamage(playerPos, delta) {
+  const hitDistance = 3;
+
+  for (const zombie of zombies) {
+    if (!zombie.mesh) continue;
+
+    const dist = zombie.mesh.position.distanceTo(playerPos);
+    //console.log('Distanza' , dist);
+
+    if (dist < hitDistance) {
+      //if (!zombie.lastHitCooldown) zombie.lastHitCooldown = 0;
+      console.log('Last', zombie.lastHitCooldown);
+      zombie.lastHitCooldown -= delta;
+      console.log('Last Update', zombie.lastHitCooldown);
+
+      if (zombie.lastHitCooldown <= 0) {
+        console.log('Vita', PLAYER.LIFE);
+        PLAYER.LIFE -= 10;
+        //console.log('Vita Update', PLAYER.LIFE);
+        zombie.lastHitCooldown = 1.0; // 1 secondo di cooldown
+
+        if (PLAYER.LIFE < 0) PLAYER.LIFE = 0;
+        console.log('🩸 Danno ricevuto! Vita:', PLAYER.LIFE);
+      }
+    } else {
+      zombie.lastHitCooldown = 0; // resetta se troppo lontano
+    }
+  }
+}
+
 export function updateBullets(delta){
   const gravity = new THREE.Vector3(0, -9.8, 0);
 
@@ -138,7 +170,7 @@ export function updateBullets(delta){
         if(!zombie.mesh) continue;
 
         const distance = bullet.mesh.position.distanceTo(zombie.mesh.position);
-        const hitRadius = 1;
+        const hitRadius = 4;
         
        // console.log('Bullet - Zombie: ', distance);
 

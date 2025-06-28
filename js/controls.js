@@ -2,7 +2,7 @@ import * as THREE from 'https://esm.sh/three@0.161.0';
 import { PointerLockControls } from 'https://esm.sh/three@0.152.2/examples/jsm/controls/PointerLockControls.js';
 import { move } from './input.js';
 import {gun} from './scene.js';
-import {shoot} from './action.js';
+import {shoot, handleZombiePlayerDamage, zombies} from './action.js';
 import { ACCEL, DECAY, MAX_SPEED, PLAYER, buildingsList, OPTIONS } from './constants.js';
 
 let controls;   let speedFactor = 0;
@@ -94,6 +94,21 @@ function weaponBobbing(speedFactor) {
   }
 }
 
+export function playerZombieCollision(playerPos){
+
+  let stop = false;
+  for(let z = zombies.length - 1; z >= 0; z--){
+    const zombie = zombies[z];
+    const dist = zombie.mesh.position.distanceTo(playerPos);
+    if(dist <= 3){
+      stop = true;
+      break;
+    }
+  }
+  return stop;
+
+}
+
 export function updateControls(delta) {
   if (!controls || !controls.isLocked) return; //if the player is not moving
 
@@ -114,11 +129,12 @@ export function updateControls(delta) {
   const playerSize = { x: 3, y : 3 , z: 2 };
 
   let blocked = collsionManagement(futurePos, buildingsList, playerSize);
+  let stop = playerZombieCollision(futurePos);
 
-  if (!blocked) {
+  if (!blocked && !stop) {
     pos.add(velocity); //apply velocity to the camera such that the player moves
   }
-
+  handleZombiePlayerDamage(pos, delta)
   //block the position so the player can't go out of the map
   pos.x = THREE.MathUtils.clamp(pos.x, -OPTIONS.areaSize, OPTIONS.areaSize);
   pos.z = THREE.MathUtils.clamp(pos.z, -OPTIONS.areaSize, OPTIONS.areaSize);

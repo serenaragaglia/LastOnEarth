@@ -4,7 +4,8 @@ export const WORLD = {
 
 export const PLAYER = {
   SPEED: 5,
-  HEIGHT: 2
+  HEIGHT: 2,
+  LIFE : 100
 };
 
 export const COLORS = {

@@ -1,7 +1,7 @@
 import * as SCENE from './scene.js';
 import { setupControls, updateControls, getControls } from './controls.js';
 import { setupInput } from './input.js';
-import {updateBullets, spawnRandomZombies, updateZombies} from './action.js';
+import {updateBullets, spawnRandomZombies, updateZombies, handleZombiePlayerDamage} from './action.js';
 
 export let scene;
 let camera, renderer;

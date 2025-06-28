@@ -1,2 +1,5 @@
 gestire collisioni zombie - oggetti
 gestire collisione pallottole - pavimento
+
+vita del player
+armi (?)
