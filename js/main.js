@@ -15,9 +15,10 @@ export function init() {
   setupControls(camera, scene, renderer.domElement);
   SCENE.loadGunModel(getControls());
   SCENE.buildAbandonedTown(scene);
-  SCENE.loadZombieModel().then((zombieModel) => {
+ /* SCENE.loadZombieModel().then((zombieModel) => {
   spawnRandomZombies(10, zombieModel);
-});
+});*/
+  spawnRandomZombies(10);
   setupInput();
   //document.addEventListener('mousedown', shoot());
   animate();

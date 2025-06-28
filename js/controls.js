@@ -28,11 +28,10 @@ export function setupControls(camera, scene, domElement) {
 }
 
 export function isColliding(firstObjPos, firstObjSize, secObjPos, secObjSize){
-  const buffer = 0.05
     return (
-      Math.abs(firstObjPos.x - secObjPos.x) < (firstObjSize.x / 2 + secObjSize.x / 2 + buffer) &&
-      Math.abs(firstObjPos.y - secObjPos.y) < (firstObjSize.y / 2 + secObjSize.y / 2 + buffer) &&
-      Math.abs(firstObjPos.z - secObjPos.z) < (firstObjSize.z / 2 + secObjSize.z / 2 + buffer)
+      Math.abs(firstObjPos.x - secObjPos.x) < (firstObjSize.x / 2 + secObjSize.x / 2 ) &&
+      Math.abs(firstObjPos.y - secObjPos.y) < (firstObjSize.y / 2 + secObjSize.y / 2 ) &&
+      Math.abs(firstObjPos.z - secObjPos.z) < (firstObjSize.z / 2 + secObjSize.z / 2 )
   );
 }
 
@@ -115,7 +114,6 @@ export function updateControls(delta) {
   const playerSize = { x: 3, y : 3 , z: 2 };
 
   let blocked = collsionManagement(futurePos, buildingsList, playerSize);
-  //blocked ||= collsionManagement(futurePos, zombies.map(z => ({ mesh: z.mesh, size: { x: 1, z: 1 } })), playerSize);
 
   if (!blocked) {
     pos.add(velocity); //apply velocity to the camera such that the player moves
