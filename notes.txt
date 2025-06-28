@@ -1,5 +1,14 @@
-gestire collisioni zombie - oggetti
+gestire collisioni zombie - oggetti ok circa
 gestire collisione pallottole - pavimento
 
-vita del player
+vita del player ok
+effetti quando il player viene colpito
 armi (?)
+
+schermata di inizio
+spawn zombie a intervalli -> a livelli
+
+scenografia
+cielo con alba tramonto ecc
+nebbia
+
