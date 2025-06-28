@@ -3,21 +3,16 @@
 <head>
   <meta charset="UTF-8" />
   <title>WorldDisaster</title>
-  <style>
-    body { margin: 0; overflow: hidden; }
-    canvas { display: block; }
-  </style>
+  <link href="style.css" rel="stylesheet">
+
 </head>
 <body>
   <script type="module">
     import { init } from './js/main.js';
-    import {PLAYER} from './js/constants.js';
     init();
-    document.getElementById("playerLife").innerText = PLAYER.LIFE;
   </script>
-  <div style="position: absolute; top: 10px; left: 10px; color: red; font-size: 20px;">
-    Life :  &nbsp;
-  </div>
-    <p id="playerLife" style="position: absolute; top: 10px; left: 10px; color: red; font-size: 20px;"></p>
+<div id="lifeContainer">
+  <div id="lifeBar"></div>
+</div>
 </body>
 </html>

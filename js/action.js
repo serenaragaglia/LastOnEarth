@@ -2,6 +2,7 @@ import * as THREE from 'https://esm.sh/three@0.161.0';
 import {getControls, collsionManagement} from './controls.js';
 import {scene} from './main.js';
 import {COLORS, buildingsList, BULLETSPEED, PLAYER} from './constants.js';
+import { updatePlayerLifeUI } from './ui.js';
 
 export const bullets = [];
 export const zombies = [];
@@ -120,7 +121,7 @@ export function spawnRandomZombies(count) {
 }
 
 export function handleZombiePlayerDamage(playerPos, delta) {
-  const hitDistance = 3;
+  const hitDistance = 4;
 
   for (const zombie of zombies) {
     if (!zombie.mesh) continue;
@@ -129,7 +130,7 @@ export function handleZombiePlayerDamage(playerPos, delta) {
     //console.log('Distanza' , dist);
 
     if (dist < hitDistance) {
-      //if (!zombie.lastHitCooldown) zombie.lastHitCooldown = 0;
+      if (!zombie.lastHitCooldown) zombie.lastHitCooldown = 0;
       console.log('Last', zombie.lastHitCooldown);
       zombie.lastHitCooldown -= delta;
       console.log('Last Update', zombie.lastHitCooldown);
@@ -137,6 +138,7 @@ export function handleZombiePlayerDamage(playerPos, delta) {
       if (zombie.lastHitCooldown <= 0) {
         console.log('Vita', PLAYER.LIFE);
         PLAYER.LIFE -= 10;
+        updatePlayerLifeUI();
         //console.log('Vita Update', PLAYER.LIFE);
         zombie.lastHitCooldown = 1.0; // 1 secondo di cooldown
 

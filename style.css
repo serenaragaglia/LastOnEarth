@@ -1,0 +1,20 @@
+body { margin: 0; overflow: hidden; }
+
+canvas { display: block; }
+
+#lifeContainer{
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  width: 200px;
+  height: 20px;
+  background-color: #555;
+  border: 2px solid #222;
+}
+
+#lifeBar{
+    height: 100%;
+    width: 100%;
+    background-color: #e74c3c;
+    transition: width 0.2s ease-in-out;
+}
