@@ -3,19 +3,29 @@ export const WORLD = {
 };
 
 export const PLAYER = {
-  SPEED: 7,
+  SPEED: 5,
   HEIGHT: 2
 };
 
 export const COLORS = {
   SKY: 0x87CEEB,
-  FLOOR: 0x555555
+  FLOOR: 0x555555,
+  BULLET : 0xffff00
 };
 
 export const OPTIONS = {
-    areaSize: 100,
-    spacing: 10,
-    density: 0.05,  // densità: da 0 (vuoto) a 1 (max)
-    buildingRatio: 0.7 // % di case vs. palazzi
-  }
+  areaSize: 80,
+  spacing: 10,
+  centerRadius: 10,
+  innerDensity: 0.3,
+  outerDensity: 0.2
+}
+
+export const MAX_SPEED = 2;  
+export const ACCEL = 1.5;         
+export const DECAY = 2.5;         
+
+export const BULLETSPEED = 50;
+
+export const buildingsList = [];
 

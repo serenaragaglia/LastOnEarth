@@ -1,6 +1,8 @@
 import * as THREE from 'https://esm.sh/three@0.161.0';
 import { GLTFLoader } from 'https://esm.sh/three@0.161.0/examples/jsm/loaders/GLTFLoader.js';
-import { COLORS } from './constants.js';
+import { buildingsList, COLORS, OPTIONS} from './constants.js';
+export let gun = null;
+export let zombieModel = null;
 
 //Function to load textures
 function loadTexture(path, options = {}) {
@@ -16,13 +18,51 @@ function loadTexture(path, options = {}) {
 export async function loadGunModel(controls) {
   const loader = new GLTFLoader();
   loader.load('./models/hand_gun.glb', (gltf) => {
-    const gun = gltf.scene;
+    gun = gltf.scene;
     gun.scale.set(0.05, 0.05, 0.05);
-    gun.position.set(0.4, -0.5, -1.0); // posizione rispetto alla camera
-    controls.getObject().add(gun);
+    gun.rotation.y= Math.PI;
+    //gun.name = 'gun';
+    gun.position.set(0.4, -0.5, -1.0); //position wrt camera
+    controls.getObject().add(gun);  
+
+    const gunFront = new THREE.Object3D(); 
+    gunFront.name = 'gunFront';
+    gunFront.position.set(0.4, 0.5, 13);
+    gun.add(gunFront);
+
+    const axes = new THREE.AxesHelper(10); // lunghezza degli assi
+    gun.add(axes);
   }, undefined, (err) => {
     console.error('Errore nel caricamento della pistola:', err);
   });
+
+}
+
+export async function loadZombieModel() {
+  const loader = new GLTFLoader();
+
+  return new Promise((resolve, reject) => {
+    loader.load('./models/zombie_smoke_mummy_character_12_mb.glb',
+      (gltf) => {
+        zombieModel = gltf.scene;
+        zombieModel.name = 'zombieModel';
+
+        const axes = new THREE.AxesHelper(10);
+        zombieModel.add(axes);
+
+        resolve(zombieModel);
+      },
+      undefined,
+      (err) => {
+        console.error('Errore nel caricamento dello zombie:', err);
+        reject(err);
+      }
+    );
+  });
+}
+
+export function getZombie(){
+  return zombieModel;
 }
 
 //Set up of the scene
@@ -74,12 +114,13 @@ function createBuilding(position, size, color = 0x3a3a3a) {
   const material = new THREE.MeshStandardMaterial({ color });
   const building = new THREE.Mesh(geometry, material);
   building.position.set(position.x, size.y / 2, position.z);
+  buildingsList.push({
+  mesh: building,
+  size: { ...size } // crea una copia per sicurezza
+  });
   return building;
 }
 
-/**
- * Aggiunge un tetto a cono sull'edificio dato
- */
 function addRoof(scene, baseMesh, size) {
   const roof = new THREE.Mesh(
     new THREE.ConeGeometry(size.x * 0.75, size.y * 0.5, 4),
@@ -94,9 +135,6 @@ function addRoof(scene, baseMesh, size) {
   scene.add(roof);
 }
 
-/**
- * Crea una casa semplice con tetto
- */
 function addHouse(scene, position) {
   const height = 4 + Math.random() * 2;
   const size = { x: 6, y: height, z: 6 };
@@ -105,9 +143,7 @@ function addHouse(scene, position) {
   addRoof(scene, house, size);
 }
 
-/**
- * Crea un palazzo alto (senza tetto)
- */
+
 function addSkyscraper(scene, position) {
   const height = 15 + Math.random() * 10;
   const size = { x: 8, y: height, z: 8 };
@@ -115,22 +151,32 @@ function addSkyscraper(scene, position) {
   scene.add(building);
 }
 
-/**
- * Popola una piccola città abbandonata
- */
 export function buildAbandonedTown(scene) {
-  // Case ai lati
-  for (let i = -80; i <= 80; i += 20) {
-    addHouse(scene, { x: -25, z: i });
-    addHouse(scene, { x: 30, z: i });
-    addHouse(scene, { x: 50, z: 45 });
-    addSkyscraper(scene, { x: -50, z: i + 5 });
-  }
+  const gridCount = Math.floor((OPTIONS.areaSize * 2) / OPTIONS.spacing);
+  const placed = new Set();
 
-  // Alcuni palazzi sparsi
-  for(let i = -80; i <= 80; i += 20){
-    addSkyscraper(scene, { x: 0, z: -60 });
-    addSkyscraper(scene, { x: -40, z: 35 });
-   
+  for (let gx = -gridCount / 2; gx <= gridCount / 2; gx++) {
+    for (let gz = -gridCount / 2; gz <= gridCount / 2; gz++) {
+      const x = gx * OPTIONS.spacing + (Math.random() - 0.5) * OPTIONS.spacing * 0.3;
+      const z = gz * OPTIONS.spacing + (Math.random() - 0.5) * OPTIONS.spacing * 0.3;
+      const dist = Math.sqrt(x * x + z * z);
+
+      const isCenter = dist < OPTIONS.centerRadius;
+      const chance = Math.random();
+
+      const key = `${Math.round(x)},${Math.round(z)}`;
+      if (placed.has(key)) continue;
+      placed.add(key);
+
+      if (isCenter) {
+        if (chance < OPTIONS.innerDensity) addSkyscraper(scene, { x, z });
+      } else {
+        if (chance < OPTIONS.outerDensity) {
+          chance < OPTIONS.outerDensity * 0.4
+            ? addSkyscraper(scene, { x, z })
+            : addHouse(scene, { x, z });
+        }
+      }
+    }
   }
 }

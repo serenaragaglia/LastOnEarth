@@ -1,8 +1,10 @@
 import * as SCENE from './scene.js';
 import { setupControls, updateControls, getControls } from './controls.js';
 import { setupInput } from './input.js';
+import {updateBullets, spawnRandomZombies, updateZombies} from './action.js';
 
-let scene, camera, renderer;
+export let scene;
+let camera, renderer;
 
 export function init() {
   scene = SCENE.createScene();
@@ -13,7 +15,11 @@ export function init() {
   setupControls(camera, scene, renderer.domElement);
   SCENE.loadGunModel(getControls());
   SCENE.buildAbandonedTown(scene);
+  SCENE.loadZombieModel().then((zombieModel) => {
+  spawnRandomZombies(10, zombieModel);
+});
   setupInput();
+  //document.addEventListener('mousedown', shoot());
   animate();
 }
 
@@ -24,6 +30,9 @@ function animate() {
   const time = performance.now();
   const delta = (time - prevTime) / 1000;
   updateControls(delta);
+  updateBullets(delta);
+  updateZombies(delta);
   renderer.render(scene, camera);
   prevTime = time;
 }
+
