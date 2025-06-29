@@ -11,8 +11,22 @@
     import { init } from './js/main.js';
     init();
   </script>
-<div id="lifeContainer">
-  <div id="lifeBar"></div>
-</div>
+  <div id="startScreen" class="overlayScreen">
+    <h1>LastOnEarth</h1>
+    <p>Premi INVIO per iniziare</p>
+  </div>
+
+  <div id="lifeContainer">
+    <div id="lifeBar"></div>
+  </div>
+  <div id="lowLifeBorder"></div>
+
+  <div id="gameFilter"></div>
+  <div id="gameOverScreen" class="overlayScreen">
+    <h1>GAME OVER</h1>
+    <p>Hai resistito quanto potevi…</p>
+    <button onclick="restartGame()">Riprova</button>
+  </div>
+
 </body>
 </html>

@@ -1,3 +1,5 @@
+import {init} from './main.js';
+
 export const move = { forward: false, backward: false, left: false, right: false };
 
 export function setupInput() {
@@ -18,4 +20,17 @@ export function setupInput() {
       case 'KeyD': move.right = false; break;
     }
   });
+}
+
+export function startGame(){
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      document.getElementById('startScreen').style.display = 'none';
+      //init(); // ← avvia il gioco
+    }
+  })
+}
+
+window.restartGame = function () {
+  location.reload(); // oppure puoi resettare via codice senza ricaricare
 }

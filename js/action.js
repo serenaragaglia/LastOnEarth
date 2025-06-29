@@ -2,10 +2,28 @@ import * as THREE from 'https://esm.sh/three@0.161.0';
 import {getControls, collsionManagement} from './controls.js';
 import {scene} from './main.js';
 import {COLORS, buildingsList, BULLETSPEED, PLAYER} from './constants.js';
-import { updatePlayerLifeUI } from './ui.js';
+import { updateLowLifeBorder, updatePlayerLifeUI } from './ui.js';
+import { heartModel } from './scene.js';
 
 export const bullets = [];
 export const zombies = [];
+export const hearts = [];
+
+export function heartSpawn(scene, position){
+  const heart = heartModel.clone();
+  heart.position.copy(position);
+  //heart.position.y += 0.5;
+  scene.add(heart);
+  hearts.push(heart);
+}
+
+export function animateHeart(delta){
+  for(const aux of hearts){
+    aux.rotation.y += delta * 2;
+    const t = performance.now() * 0.02;
+    aux.position.y += Math.sin(t + 2) * 0.008; 
+  }
+}
 
 export function shoot(){
   const controls = getControls();
@@ -16,7 +34,6 @@ export function shoot(){
 
   ahead.getWorldPosition(pos);
   ahead.getWorldDirection(direction);
-
 
   const geometry = new THREE.SphereGeometry(0.5, 10, 10);
   const material = new THREE.MeshBasicMaterial({color : COLORS.BULLET});
@@ -67,6 +84,7 @@ export function updateZombies(delta){
   for(let i = zombies.length - 1; i >= 0; i--){
     const zombie = zombies[i];
     if(zombie.life == 0){
+      //heartSpawn(scene, zombie.mesh.position);
       scene.remove(zombie.mesh);
       zombies.splice(i, 1);
       continue;
@@ -74,24 +92,24 @@ export function updateZombies(delta){
     else{
       const controls = getControls();
       const playerPos = controls.getObject().position;
-      zombie.mesh.position.y = 0;
+      zombie.mesh.position.y = 1.6;
       const dir = playerPos.clone().sub(zombie.mesh.position).normalize();
 
       //collision with objects and player
       const dist = zombie.mesh.position.distanceTo(playerPos);
 
       //if the player is seen by the zombie, then this will follow him/her
-      if(dist < 6) {
+      if(dist < 10) {
         zombie.alert = true;
       }
-      if(dist > 15) {
+      if(dist > 30) {
         zombie.alert = false;
       }
 
       //console.log('Player - Zombie :', dist);
        if(zombie.alert == true){
         const zombieFuturePos = zombie.mesh.position.clone().addScaledVector(dir, zombie.speed * delta);
-        zombieFuturePos.y = 0;
+        zombieFuturePos.y = 1.6;
         let collide = collsionManagement(zombieFuturePos, buildingsList, zombie.size);
         if((zombieFuturePos.distanceTo(playerPos) > 3) && (!collide)){
           zombie.mesh.position.copy(zombieFuturePos);
@@ -113,16 +131,16 @@ export function spawnRandomZombies(count) {
     const x = (Math.random() - 0.5) * range * 2;
     const z = (Math.random() - 0.5) * range * 2;
     const y = 0;
-
+    
+    const playerPos = getControls().getObject().position;
     const position = new THREE.Vector3(x, y, z);
-    //if (position.distanceTo(player.position) < 5) continue;
+    if (position.distanceTo(playerPos) < 10) continue;
     spawnZombie(position);
   }
 }
 
 export function handleZombiePlayerDamage(playerPos, delta) {
   const hitDistance = 4;
-
   for (const zombie of zombies) {
     if (!zombie.mesh) continue;
 
@@ -139,10 +157,16 @@ export function handleZombiePlayerDamage(playerPos, delta) {
         console.log('Vita', PLAYER.LIFE);
         PLAYER.LIFE -= 10;
         updatePlayerLifeUI();
+        updateLowLifeBorder();
         //console.log('Vita Update', PLAYER.LIFE);
         zombie.lastHitCooldown = 1.0; // 1 secondo di cooldown
 
-        if (PLAYER.LIFE < 0) PLAYER.LIFE = 0;
+        if (PLAYER.LIFE == 0) {
+          document.getElementById('gameFilter').style.display = 'block';
+          document.getElementById('gameOverScreen').style.display = 'flex';
+          cancelAnimationFrame(animationId); // ferma il ciclo se usi animationId
+          controls.unlock();
+        }               
         console.log('🩸 Danno ricevuto! Vita:', PLAYER.LIFE);
       }
     } else {
@@ -175,13 +199,12 @@ export function updateBullets(delta){
         const hitRadius = 4;
         
        // console.log('Bullet - Zombie: ', distance);
-
-
         //if the bullet hits the zombie his life decreases, according to the power of the gun that the player has !!!!!!!!!
         if(distance < hitRadius){
           zombie.life -= 1;
           console.log(zombie.life);
           if(zombie.life <= 0){
+            heartSpawn(scene, zombie.mesh.position);
             scene.remove(zombie.mesh);
             zombies.splice(z, 1);
           }

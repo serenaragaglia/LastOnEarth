@@ -12,3 +12,14 @@ export function updatePlayerLifeUI() {
   else if (percent > 30) bar.style.backgroundColor = '#f1c40f';  // giallo
   else bar.style.backgroundColor = '#e74c3c';                     // rosso
 }
+
+export function updateLowLifeBorder() {
+  const border = document.getElementById('lowLifeBorder');
+  if (!border) return;
+
+  if (PLAYER.LIFE <= 30) {
+    border.style.display = 'block';
+  } else {
+    border.style.display = 'none';
+  }
+}

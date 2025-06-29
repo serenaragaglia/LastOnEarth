@@ -3,6 +3,7 @@ import { GLTFLoader } from 'https://esm.sh/three@0.161.0/examples/jsm/loaders/GL
 import { buildingsList, COLORS, OPTIONS} from './constants.js';
 export let gun = null;
 export let zombieModel = null;
+export let heartModel = null;
 
 //Function to load textures
 function loadTexture(path, options = {}) {
@@ -64,6 +65,31 @@ export async function loadZombieModel() {
 export function getZombie(){
   return zombieModel;
 }
+
+export async function loadHeartModel() {
+  const loader = new GLTFLoader();
+
+  return new Promise((resolve, reject) => {
+    loader.load('./models/heart__sketchfabweeklychallenge.glb',
+      (gltf) => {
+        heartModel = gltf.scene;
+        heartModel.name = 'heartModel';
+        heartModel.position.set(0.4, 0.5, 13);
+        heartModel.scale.set(0.5, 0.5, 0.5);
+        const axes = new THREE.AxesHelper(10);
+        heartModel.add(axes);
+
+        resolve(heartModel);
+      },
+      undefined,
+      (err) => {
+        console.error('Errore nel caricamento dello zombie:', err);
+        reject(err);
+      }
+    );
+  });
+}
+
 
 //Set up of the scene
 export function createScene() {

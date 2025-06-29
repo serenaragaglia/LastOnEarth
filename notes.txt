@@ -2,7 +2,7 @@ gestire collisioni zombie - oggetti ok circa
 gestire collisione pallottole - pavimento
 
 vita del player ok
-effetti quando il player viene colpito
+effetti quando il player viene colpito (opzionale: shake camera)
 armi (?)
 
 schermata di inizio

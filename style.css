@@ -2,6 +2,47 @@ body { margin: 0; overflow: hidden; }
 
 canvas { display: block; }
 
+.overlayScreen {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100vw; height: 100vh;
+  background: rgba(0, 0, 0, 0.85);
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 2rem;
+  z-index: 9999;
+}
+
+#startScreen, #gameOverScreen {
+  display: none;
+}
+
+.overlayScreen h1 {
+  font-size: 4rem;
+  margin-bottom: 1rem;
+  color: #e74c3c;
+}
+
+.overlayScreen p {
+  font-size: 1.4rem;
+  margin-bottom: 2rem;
+  color: #ccc;
+}
+
+.overlayScreen button {
+  padding: 10px 20px;
+  font-size: 1rem;
+  background: #e74c3c;
+  border: none;
+  color: white;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
 #lifeContainer{
   position: absolute;
   top: 20px;
@@ -17,4 +58,42 @@ canvas { display: block; }
     width: 100%;
     background-color: #e74c3c;
     transition: width 0.2s ease-in-out;
+}
+
+#lowLifeBorder {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 999;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(255, 0, 0, 0) 40%,
+    rgba(255, 0, 0, 0.15) 60%,
+    rgba(255, 0, 0, 0.4) 85%,
+    rgba(255, 0, 0, 0.6) 100%
+  );
+  opacity: 0;
+  transition: opacity 0.5s ease;
+  animation: pulseRed 2s infinite ease-in-out;
+  display: none;
+  mix-blend-mode: screen;
+  border-radius: 0;
+}
+
+@keyframes pulseRed {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 0.7; }
+}
+
+#gameFilter {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: grayscale(100%);
+  display: none;
+  z-index: 9998;
 }
