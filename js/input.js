@@ -1,4 +1,7 @@
-import {init} from './main.js';
+import { collectHeart, getControls } from './controls.js';
+import { PLAYER } from './constants.js';
+import { updatePlayerLifeUI, updateLowLifeBorder } from './ui.js';
+import { hearts } from './action.js';
 
 export const move = { forward: false, backward: false, left: false, right: false };
 
@@ -33,4 +36,21 @@ export function startGame(){
 
 window.restartGame = function () {
   location.reload(); // oppure puoi resettare via codice senza ricaricare
+}
+
+export function recoverLife(scene){
+  window.addEventListener('keydown' , (e) => {
+    if(e.key === 'e' || e.key === 'E'){
+      const playerPos = getControls().getObject().position;
+      let heartInRange = collectHeart(playerPos);
+      if(heartInRange && PLAYER.LIFE < 100){
+        PLAYER.LIFE = Math.min(PLAYER.LIFE + 20, 100);
+        updatePlayerLifeUI();
+        updateLowLifeBorder();
+        scene.remove(heartInRange);
+        hearts.splice(hearts.indexOf(heartInRange), 1);
+        heartInRange = null;
+      }
+    }
+  });
 }

@@ -23,3 +23,13 @@ export function updateLowLifeBorder() {
     border.style.display = 'none';
   }
 }
+
+export function showHintCollect(heartInRange){
+    const collectHint = document.getElementById('pickupHint');
+    if(heartInRange){
+      collectHint.style.display = 'block';
+    }
+    else{
+      collectHint.style.display = 'none';
+    }
+}

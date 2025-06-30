@@ -1,9 +1,10 @@
 import * as THREE from 'https://esm.sh/three@0.161.0';
+import * as SkeletonUtils from './SkeletonUtils.js'
 import {getControls, collsionManagement} from './controls.js';
 import {scene} from './main.js';
 import {COLORS, buildingsList, BULLETSPEED, PLAYER} from './constants.js';
 import { updateLowLifeBorder, updatePlayerLifeUI } from './ui.js';
-import { heartModel } from './scene.js';
+import { heartModel, zombieModel } from './scene.js';
 
 export const bullets = [];
 export const zombies = [];
@@ -12,7 +13,7 @@ export const hearts = [];
 export function heartSpawn(scene, position){
   const heart = heartModel.clone();
   heart.position.copy(position);
-  //heart.position.y += 0.5;
+  heart.position.y = 1;
   scene.add(heart);
   hearts.push(heart);
 }
@@ -56,21 +57,22 @@ export function shoot(){
 
 //zombie managment
 export function spawnZombie(position) {
-  const size = 3;
-  const zombieMesh = new THREE.Mesh(
-    new THREE.BoxGeometry(size, size, size),
-    new THREE.MeshStandardMaterial({ color: 0x00ff00 })
-  );
-  const axes = new THREE.AxesHelper(10);
-  zombieMesh.add(axes);
+  
+  const zombieInstance = SkeletonUtils.clone(zombieModel);
+  zombieInstance.position.copy(position);
 
-  zombieMesh.position.copy(position);
-  zombieMesh.name = 'zombie';
-  scene.add(zombieMesh);
+  zombieInstance.traverse((node) => {
+    console.log(node.name, node.type);
+  });
+  scene.add(zombieInstance);
+  
+  const boundingBox = new THREE.Box3().setFromObject(zombieInstance);
+  const zombieSize = new THREE.Vector3();
+  boundingBox.getSize(zombieSize);
 
   const zombie = {
-    mesh: zombieMesh,
-    size: { x: size, z: size },
+    mesh: zombieInstance,
+    size: { x: zombieSize.x, z: zombieSize },
     speed: 2,
     life: 10,
     alert: false,
@@ -84,7 +86,6 @@ export function updateZombies(delta){
   for(let i = zombies.length - 1; i >= 0; i--){
     const zombie = zombies[i];
     if(zombie.life == 0){
-      //heartSpawn(scene, zombie.mesh.position);
       scene.remove(zombie.mesh);
       zombies.splice(i, 1);
       continue;
@@ -92,7 +93,7 @@ export function updateZombies(delta){
     else{
       const controls = getControls();
       const playerPos = controls.getObject().position;
-      zombie.mesh.position.y = 1.6;
+      zombie.mesh.position.y = 0;
       const dir = playerPos.clone().sub(zombie.mesh.position).normalize();
 
       //collision with objects and player
@@ -109,18 +110,13 @@ export function updateZombies(delta){
       //console.log('Player - Zombie :', dist);
        if(zombie.alert == true){
         const zombieFuturePos = zombie.mesh.position.clone().addScaledVector(dir, zombie.speed * delta);
-        zombieFuturePos.y = 1.6;
+        zombieFuturePos.y = 0;
         let collide = collsionManagement(zombieFuturePos, buildingsList, zombie.size);
         if((zombieFuturePos.distanceTo(playerPos) > 3) && (!collide)){
           zombie.mesh.position.copy(zombieFuturePos);
         }
       }
       zombie.mesh.lookAt(playerPos);
-
-      /*const t = performance.now() * 0.005;
-      const leg = zombie.mesh.getObjectByName('RightLeg');
-      if (leg) leg.rotation.x = Math.sin(t) * 0.5;*/
-
     }
   }
 }
@@ -164,7 +160,7 @@ export function handleZombiePlayerDamage(playerPos, delta) {
         if (PLAYER.LIFE == 0) {
           document.getElementById('gameFilter').style.display = 'block';
           document.getElementById('gameOverScreen').style.display = 'flex';
-          cancelAnimationFrame(animationId); // ferma il ciclo se usi animationId
+          //cancelAnimationFrame(animationId); // ferma il ciclo se usi animationId
           controls.unlock();
         }               
         console.log('🩸 Danno ricevuto! Vita:', PLAYER.LIFE);

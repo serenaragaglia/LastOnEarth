@@ -1,6 +1,6 @@
 import * as SCENE from './scene.js';
 import { setupControls, updateControls, getControls } from './controls.js';
-import { setupInput, startGame } from './input.js';
+import { recoverLife, setupInput, startGame } from './input.js';
 import {updateBullets, spawnRandomZombies, updateZombies, animateHeart} from './action.js';
 
 export let scene;
@@ -19,10 +19,12 @@ export async function init() {
   await SCENE.loadHeartModel();
   SCENE.loadGunModel(getControls());
   SCENE.buildAbandonedTown(scene);
- /* SCENE.loadZombieModel().then((zombieModel) => {
-  spawnRandomZombies(10, zombieModel);
-});*/
-  spawnRandomZombies(10);
+  recoverLife(scene);
+
+  SCENE.loadZombieModel().then((zombieModel) => {
+  spawnRandomZombies(5, zombieModel);
+});
+  //spawnRandomZombies(10);
   setupInput();
   //document.addEventListener('mousedown', shoot());
   animate();

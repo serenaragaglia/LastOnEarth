@@ -2,8 +2,9 @@ import * as THREE from 'https://esm.sh/three@0.161.0';
 import { PointerLockControls } from 'https://esm.sh/three@0.152.2/examples/jsm/controls/PointerLockControls.js';
 import { move } from './input.js';
 import {gun} from './scene.js';
-import {shoot, handleZombiePlayerDamage, zombies} from './action.js';
+import {shoot, handleZombiePlayerDamage, zombies, hearts} from './action.js';
 import { ACCEL, DECAY, MAX_SPEED, PLAYER, buildingsList, OPTIONS } from './constants.js';
+import { showHintCollect } from './ui.js';
 
 let controls;   let speedFactor = 0;
 
@@ -106,7 +107,15 @@ export function playerZombieCollision(playerPos){
     }
   }
   return stop;
+}
 
+export function collectHeart(playerPos){
+  for(const heart of hearts){
+    const distance = heart.position.distanceTo(playerPos);
+    if(distance < 2 && PLAYER.LIFE < 100){
+      return heart;
+    }
+  }
 }
 
 export function updateControls(delta) {
@@ -140,6 +149,9 @@ export function updateControls(delta) {
   pos.z = THREE.MathUtils.clamp(pos.z, -OPTIONS.areaSize, OPTIONS.areaSize);
 
   weaponBobbing(speedFactor);
+  let heartInRange = collectHeart(pos);
+  showHintCollect(heartInRange);
+
 
 }
 

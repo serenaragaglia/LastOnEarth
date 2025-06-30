@@ -43,11 +43,12 @@ export async function loadZombieModel() {
   const loader = new GLTFLoader();
 
   return new Promise((resolve, reject) => {
-    loader.load('./models/zombie_smoke_mummy_character_12_mb.glb',
+    loader.load('./models/zombie.glb',
       (gltf) => {
         zombieModel = gltf.scene;
         zombieModel.name = 'zombieModel';
-
+        //zombieModel.scale.set(5, 5, 5);
+        //console.log(zombieModel);
         const axes = new THREE.AxesHelper(10);
         zombieModel.add(axes);
 
@@ -89,7 +90,6 @@ export async function loadHeartModel() {
     );
   });
 }
-
 
 //Set up of the scene
 export function createScene() {
