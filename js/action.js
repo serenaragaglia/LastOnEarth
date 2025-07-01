@@ -89,9 +89,11 @@ export function spawnZombie(position) {
     alert: false,
     lastHitCooldown : 0,
     walkTime: Math.random() * Math.PI * 2,
-    walking : false
+   // walking : false,
+    target: generateRandomTarget(position),
+    timer : 0
   };
-
+  
   zombies.push(zombie);
 }
 
@@ -101,12 +103,11 @@ export function moveZombie(zombie, futurePos, delta){
   const angle2 = Math.sin(zombie.walkTime + Math.PI/2) * 0.3;
   zombie.leftLeg.rotation.x = angle;
   zombie.rightLeg.rotation.x = angle2;
-  zombie.walking = true;
   zombie.mesh.position.copy(futurePos);
 }
 
 function generateRandomTarget(origin) {
-  const range = 15; 
+  const range = 30; 
   const x = origin.x + (Math.random() - 0.5) * range;
   const z = origin.z + (Math.random() - 0.5) * range;
   return new THREE.Vector3(x, 0, z);
@@ -139,27 +140,36 @@ export function updateZombies(delta){
       }
 
       if(zombie.alert == true){
+        //console.log('zombie alert true');
         zombie.mesh.lookAt(playerPos);
         const zombieFuturePos = zombie.mesh.position.clone().addScaledVector(dir, zombie.speed * delta);
         zombieFuturePos.y = 0;
         let collide = collsionManagement(zombieFuturePos, buildingsList, zombie.size);
-        if((zombieFuturePos.distanceTo(playerPos) > 5) && (!collide) && (zombie.walking == false)){
+        if((zombieFuturePos.distanceTo(playerPos) > 5) && (!collide)){
           moveZombie(zombie, zombieFuturePos, delta);
         }
       }
       else if(zombie.alert == false){
-        let target = new THREE.Vector3();
-        target = generateRandomTarget(zombie.mesh.position);
-        const randomDir = target.clone().sub(zombie.mesh.position).normalize();
+        //console.log('zombie alert false');
+        zombie.timer += delta;
+        //if more than 15s passed, change target
+        if(zombie.timer > 2){
+          //let target = new THREE.Vector3();
+          zombie.target = generateRandomTarget(zombie.mesh.position);
+          zombie.timer = 0;
+        }
+
+        const randomDir = zombie.target.clone().sub(zombie.mesh.position).normalize();
         const futureRanPos = zombie.mesh.position.clone().addScaledVector(randomDir, zombie.speed * delta);
         futureRanPos.y = 0 ;
+
         let collide = collsionManagement(futureRanPos, buildingsList, zombie.size);
-        if((!collide) && (futureRanPos.distanceTo(target) > 5) && (zombie.walking == false)){
-          zombie.mesh.lookAt(target);
+        let zombieCollide = collsionManagement(futureRanPos, zombies, zombie.size);
+        if((collide == false) && (futureRanPos.distanceTo(zombie.target) > 5 && (zombieCollide == false))){
+          zombie.mesh.lookAt(zombie.target);
+          //zombie.walking = true;
           moveZombie(zombie, futureRanPos, delta);
-        } else {
-          target = generateRandomTarget(futureRanPos);
-        }
+        } 
       }     
     }
   }
@@ -180,7 +190,7 @@ export function spawnRandomZombies(count) {
 }
 
 export function handleZombiePlayerDamage(playerPos, delta) {
-  const hitDistance = 4;
+  const hitDistance = 6;
   for (const zombie of zombies) {
     if (!zombie.mesh) continue;
 
