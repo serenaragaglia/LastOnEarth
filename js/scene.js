@@ -51,7 +51,6 @@ export async function loadZombieModel() {
         //console.log(zombieModel);
         const axes = new THREE.AxesHelper(10);
         zombieModel.add(axes);
-
         resolve(zombieModel);
       },
       undefined,

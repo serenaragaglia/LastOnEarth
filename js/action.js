@@ -5,10 +5,12 @@ import {scene} from './main.js';
 import {COLORS, buildingsList, BULLETSPEED, PLAYER} from './constants.js';
 import { updateLowLifeBorder, updatePlayerLifeUI } from './ui.js';
 import { heartModel, zombieModel } from './scene.js';
+import { move } from './input.js';
 
 export const bullets = [];
 export const zombies = [];
 export const hearts = [];
+//let animationClock = 0;
 
 export function heartSpawn(scene, position){
   const heart = heartModel.clone();
@@ -61,26 +63,55 @@ export function spawnZombie(position) {
   const zombieInstance = SkeletonUtils.clone(zombieModel);
   zombieInstance.position.copy(position);
 
-  zombieInstance.traverse((node) => {
+  /*zombieInstance.traverse((node) => {
     console.log(node.name, node.type);
-  });
+  });*/
+  zombieInstance.scale.set(1.5, 1.5, 1.5);
   scene.add(zombieInstance);
   
   const boundingBox = new THREE.Box3().setFromObject(zombieInstance);
   const zombieSize = new THREE.Vector3();
   boundingBox.getSize(zombieSize);
+  const rightLeg = zombieInstance.getObjectByName('mixamorig5RightUpLeg');
+  const leftLeg = zombieInstance.getObjectByName('mixamorig5LeftLeg');
+  const leftArm = zombieInstance.getObjectByName('mixamorig5LeftArm');
+  const rightArm = zombieInstance.getObjectByName('mixamorig5RightArm');
 
   const zombie = {
     mesh: zombieInstance,
+    rightLeg,
+    leftLeg,
+    leftArm,
+    rightArm,
     size: { x: zombieSize.x, z: zombieSize },
     speed: 2,
     life: 10,
     alert: false,
-    lastHitCooldown : 0
+    lastHitCooldown : 0,
+    walkTime: Math.random() * Math.PI * 2,
+    walking : false
   };
 
   zombies.push(zombie);
 }
+
+export function moveZombie(zombie, futurePos, delta){
+  zombie.walkTime += delta * zombie.speed * 2;
+  const angle = Math.sin(zombie.walkTime) * 0.3;
+  const angle2 = Math.sin(zombie.walkTime + Math.PI/2) * 0.3;
+  zombie.leftLeg.rotation.x = angle;
+  zombie.rightLeg.rotation.x = angle2;
+  zombie.walking = true;
+  zombie.mesh.position.copy(futurePos);
+}
+
+function generateRandomTarget(origin) {
+  const range = 15; 
+  const x = origin.x + (Math.random() - 0.5) * range;
+  const z = origin.z + (Math.random() - 0.5) * range;
+  return new THREE.Vector3(x, 0, z);
+}
+
 
 export function updateZombies(delta){
   for(let i = zombies.length - 1; i >= 0; i--){
@@ -107,16 +138,29 @@ export function updateZombies(delta){
         zombie.alert = false;
       }
 
-      //console.log('Player - Zombie :', dist);
-       if(zombie.alert == true){
+      if(zombie.alert == true){
+        zombie.mesh.lookAt(playerPos);
         const zombieFuturePos = zombie.mesh.position.clone().addScaledVector(dir, zombie.speed * delta);
         zombieFuturePos.y = 0;
         let collide = collsionManagement(zombieFuturePos, buildingsList, zombie.size);
-        if((zombieFuturePos.distanceTo(playerPos) > 3) && (!collide)){
-          zombie.mesh.position.copy(zombieFuturePos);
+        if((zombieFuturePos.distanceTo(playerPos) > 5) && (!collide) && (zombie.walking == false)){
+          moveZombie(zombie, zombieFuturePos, delta);
         }
       }
-      zombie.mesh.lookAt(playerPos);
+      else if(zombie.alert == false){
+        let target = new THREE.Vector3();
+        target = generateRandomTarget(zombie.mesh.position);
+        const randomDir = target.clone().sub(zombie.mesh.position).normalize();
+        const futureRanPos = zombie.mesh.position.clone().addScaledVector(randomDir, zombie.speed * delta);
+        futureRanPos.y = 0 ;
+        let collide = collsionManagement(futureRanPos, buildingsList, zombie.size);
+        if((!collide) && (futureRanPos.distanceTo(target) > 5) && (zombie.walking == false)){
+          zombie.mesh.lookAt(target);
+          moveZombie(zombie, futureRanPos, delta);
+        } else {
+          target = generateRandomTarget(futureRanPos);
+        }
+      }     
     }
   }
 }
@@ -145,12 +189,12 @@ export function handleZombiePlayerDamage(playerPos, delta) {
 
     if (dist < hitDistance) {
       if (!zombie.lastHitCooldown) zombie.lastHitCooldown = 0;
-      console.log('Last', zombie.lastHitCooldown);
+      //console.log('Last', zombie.lastHitCooldown);
       zombie.lastHitCooldown -= delta;
-      console.log('Last Update', zombie.lastHitCooldown);
+      //console.log('Last Update', zombie.lastHitCooldown);
 
       if (zombie.lastHitCooldown <= 0) {
-        console.log('Vita', PLAYER.LIFE);
+        //console.log('Vita', PLAYER.LIFE);
         PLAYER.LIFE -= 10;
         updatePlayerLifeUI();
         updateLowLifeBorder();

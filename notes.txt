@@ -8,7 +8,15 @@ armi (?)
 schermata di inizio
 spawn zombie a intervalli -> a livelli
 
+
+
+
 scenografia
 cielo con alba tramonto ecc
 nebbia
-
+limbo zombie
+livelli
+braccia
+cambio armi
+traiettoria pallottola con scia
+texture pallottole
