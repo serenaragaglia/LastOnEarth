@@ -28,11 +28,11 @@ export async function loadGunModel(controls) {
 
     const gunFront = new THREE.Object3D(); 
     gunFront.name = 'gunFront';
-    gunFront.position.set(0.4, 0.5, 13);
+    gunFront.position.set(0.4, 0.5, 3);
     gun.add(gunFront);
 
     const axes = new THREE.AxesHelper(10); // lunghezza degli assi
-    gun.add(axes);
+    gunFront.add(axes);
   }, undefined, (err) => {
     console.error('Errore nel caricamento della pistola:', err);
   });

@@ -3,7 +3,7 @@ export const WORLD = {
 };
 
 export const PLAYER = {
-  SPEED: 5,
+  SPEED: 7,
   HEIGHT: 2,
   LIFE : 100
 };
