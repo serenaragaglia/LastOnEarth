@@ -112,3 +112,51 @@ canvas { display: block; }
   display: none;
   z-index: 1000;
 }
+
+#screen{
+  display: flex;
+  justify-content: right;
+}
+
+#check{
+  position: absolute;
+  display:flex;
+  padding-right: 1%;
+  padding-top: 1%;
+}
+
+#win-screen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.85);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 3rem;
+  z-index: 9999;
+  transition: opacity 1s ease;
+  opacity: 0;
+  pointer-events: none;
+}
+
+#win-screen.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.hidden {
+  display: none;
+}
+
+.message {
+  animation: fadeIn 1.2s ease forwards;
+}
+
+@keyframes fadeIn {
+  from { transform: translateY(20px); opacity: 0; }
+  to   { transform: translateY(0); opacity: 1; }
+}

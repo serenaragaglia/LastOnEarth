@@ -1,11 +1,14 @@
-export const WORLD = {
-  SIZE: 45  
+export const currentLevel = 2;
+
+export const weapon = {
+  active : null
 };
 
-export const PLAYER = {
+export const player = {
   SPEED: 7,
   HEIGHT: 2,
-  LIFE : 100
+  LIFE : 100,
+  kill : 0
 };
 
 export const COLORS = {
@@ -15,18 +18,22 @@ export const COLORS = {
 };
 
 export const OPTIONS = {
-  areaSize: 80,
+  areaSize: 200,
   spacing: 10,
   centerRadius: 10,
-  innerDensity: 0.3,
-  outerDensity: 0.2
+  innerDensity: 0,
+  outerDensity: 0
 }
 
 export const MAX_SPEED = 2;  
 export const ACCEL = 1.5;         
 export const DECAY = 2.5;         
 
-export const BULLETSPEED = 50;
+//zombie
+export const lifeZombie = 10;
+export const zombieDamage = 10;
 
 export const buildingsList = [];
+
+export const transition = 0.2;
 

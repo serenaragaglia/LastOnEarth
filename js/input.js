@@ -1,9 +1,10 @@
 import { collectHeart, getControls } from './controls.js';
-import { PLAYER } from './constants.js';
+import { player } from './constants.js';
 import { updatePlayerLifeUI, updateLowLifeBorder } from './ui.js';
 import { hearts } from './action.js';
 
 export const move = { forward: false, backward: false, left: false, right: false };
+export const targetTime = 0 ;
 
 export function setupInput() {
   document.addEventListener('keydown', (e) => {
@@ -43,8 +44,8 @@ export function recoverLife(scene){
     if(e.key === 'e' || e.key === 'E'){
       const playerPos = getControls().getObject().position;
       let heartInRange = collectHeart(playerPos);
-      if(heartInRange && PLAYER.LIFE < 100){
-        PLAYER.LIFE = Math.min(PLAYER.LIFE + 20, 100);
+      if(heartInRange && player.LIFE < 100){
+        player.LIFE = Math.min(player.LIFE + 20, 100);
         updatePlayerLifeUI();
         updateLowLifeBorder();
         scene.remove(heartInRange);
@@ -54,3 +55,12 @@ export function recoverLife(scene){
     }
   });
 }
+
+/*
+export const toggle = document.getElementById('toggleDayNight');
+  toggle.addEventListener('change', ()=> {
+    if(toggle == 0){ //if checked then night
+      targetTime = 0;
+    }
+    else targetTime = 1;  //otherwise day
+  });*/

@@ -18,5 +18,5 @@ limbo zombie
 livelli
 braccia
 cambio armi
-traiettoria pallottola con scia
+//traiettoria pallottola con scia
 texture pallottole

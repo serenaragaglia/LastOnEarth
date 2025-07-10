@@ -1,9 +1,18 @@
 import * as THREE from 'https://esm.sh/three@0.161.0';
 import { GLTFLoader } from 'https://esm.sh/three@0.161.0/examples/jsm/loaders/GLTFLoader.js';
-import { buildingsList, COLORS, OPTIONS} from './constants.js';
+import {Sky} from './sky.js';
+import { buildingsList, OPTIONS, transition} from './constants.js';
+import { targetTime } from './input.js';
 export let gun = null;
+export let shotgun = null;
 export let zombieModel = null;
 export let heartModel = null;
+export let day = 0;
+export let sun;
+export let skyValues;
+export let sunLight;
+export let stars;
+// ----------LOADER
 
 //Function to load textures
 function loadTexture(path, options = {}) {
@@ -12,6 +21,7 @@ function loadTexture(path, options = {}) {
   if (options.wrapS) texture.wrapS = options.wrapS;
   if (options.wrapT) texture.wrapT = options.wrapT;
   if (options.repeat) texture.repeat.set(options.repeat.x, options.repeat.y);
+
   return texture;
 }
 
@@ -25,6 +35,11 @@ export async function loadGunModel(controls) {
     //gun.name = 'gun';
     gun.position.set(0.4, -0.5, -1.0); //position wrt camera
     controls.getObject().add(gun);  
+    gun.userData.weaponType = 'gun';
+    gun.userData.damage = 1;
+    gun.userData.hitDistance  = 6;
+    gun.userData.bulletSpeed = 50;
+    gun.userData.bulletLife = 2;
 
     const gunFront = new THREE.Object3D(); 
     gunFront.name = 'gunFront';
@@ -33,6 +48,36 @@ export async function loadGunModel(controls) {
 
     const axes = new THREE.AxesHelper(10); // lunghezza degli assi
     gunFront.add(axes);
+  }, undefined, (err) => {
+    console.error('Errore nel caricamento della pistola:', err);
+  });
+
+}
+
+export async function loadShotGunModel(controls) {
+  const loader = new GLTFLoader();
+  loader.load('./models/shotgun.glb', (gltf) => {
+    shotgun = gltf.scene;
+    shotgun.scale.set(2, 2, 2);
+
+    shotgun.rotation.y= Math.PI/2;
+    shotgun.position.set(0.4, -0.55, -1.0); //position wrt camera
+    controls.getObject().add(shotgun);  
+
+    shotgun.userData.weaponType = 'shotgun';
+    shotgun.userData.damage = 3;
+    shotgun.userData.hitDistance  = 4;
+    shotgun.userData.bulletSpeed = 60;
+    shotgun.userData.bulletLife = 1;
+
+    /*const gunFront = new THREE.Object3D(); 
+    gunFront.name = 'gunFront';
+    gunFront.position.set(0.4, 0.5, 3);
+    gun.add(gunFront);
+    console.log(gun.position);*/
+
+    const axes = new THREE.AxesHelper(10); // lunghezza degli assi
+    shotgun.add(axes);
   }, undefined, (err) => {
     console.error('Errore nel caricamento della pistola:', err);
   });
@@ -90,10 +135,14 @@ export async function loadHeartModel() {
   });
 }
 
+//-------------------WORLD SCENE AND AMBIENT
 //Set up of the scene
 export function createScene() {
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color(COLORS.SKY);
+  //scene.background = new THREE.Color(COLORS.SKY);
+  scene.background = null;
+  const color = new THREE.Color('red');
+  scene.fog = new THREE.Fog(color, 50, 500);
   return scene;
 }
 
@@ -111,29 +160,101 @@ export function createRenderer() {
 }
 
 export function createFloor(scene) {
-  const geometry = new THREE.PlaneGeometry(200, 200);
+  const geometry = new THREE.PlaneGeometry(500, 500);
   const texture = loadTexture('../assets/textures/road.png', {
     wrapS: THREE.RepeatWrapping,
     wrapT: THREE.RepeatWrapping,
-    repeat: { x: 8, y: 8 }
+    repeat: { x: 10, y: 10 }
   });
 
   const material = new THREE.MeshBasicMaterial({ map: texture });
   const floor = new THREE.Mesh(geometry, material);
   floor.rotation.x = -Math.PI / 2;
+  const edges = new THREE.EdgesGeometry(geometry);
+  const line = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: 0xff0000 }));
+  floor.add(line);
   scene.add(floor);
 }
 
 export function createLights(scene) {
-  const ambient = new THREE.AmbientLight(0x404040, 0.4); // luce ambientale debole
-  const directional = new THREE.DirectionalLight(0xfafafa, 0.6);
-  directional.position.set(30, 80, -50);
-  directional.castShadow = true;
+sunLight = new THREE.DirectionalLight(0xffffff, 1.0);
+sunLight.position.set(0, 100, 0);
+scene.add(sunLight);
 
-  scene.add(ambient);
-  scene.add(directional);
+const ambient = new THREE.AmbientLight(0xffffff, 0.4);
+scene.add(ambient);
 }
 
+export function createStars(scene){
+  const geometry = new THREE.BufferGeometry();
+  const starsNumber = 1000;
+  const starPos = [];
+
+  for (let i = 0 ; i < starsNumber; i++){
+    const radius = 400 + Math.random() * 100;
+    const theta = Math.random() * 2 * Math.PI;
+    const phi = Math.acos(2 * Math.random() - 1);
+
+    const x = radius * Math.sin(phi) * Math.cos(theta); 
+    const y = radius * Math.sin(phi) * Math.sin(theta);
+    const z = radius * Math.cos(phi);
+
+    starPos.push(x, y , z);
+  }
+
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute(starPos, 3));
+  const material = new THREE.PointsMaterial({
+    color : 0xffffff,
+    size : 0.7,
+    sizeAttenuation : true,
+    transparent : true,
+    opacity : 0
+  });
+
+  //console.log(material.opacity);
+  stars = new THREE.Points(geometry, material);
+  scene.add(stars);
+
+}
+
+export function createSky(scene){
+  const sky = new Sky();
+  sky.scale.setScalar(800);
+  scene.add(sky);
+  sun = new THREE.Vector3();
+  skyValues = sky.material.uniforms;
+  sky.material.uniforms['turbidity'].value = 15;
+  sky.material.uniforms['rayleigh'].value = 7;
+  sky.material.uniforms['mieCoefficient'].value = 0.5;
+  sky.material.uniforms['mieDirectionalG'].value = 0.7;
+  //createStars(scene);
+
+  updateSun(0);
+}
+
+export function updateSun(delta){
+  //let time = performance.now() / 1000;
+  day +=  delta * 0.005;
+  if(day > 1) day -= 1;
+
+  //definition of sun position through the day
+  let phi = THREE.MathUtils.degToRad(THREE.MathUtils.lerp(0, 180, Math.sin(day * Math.PI)));
+  let theta= THREE.MathUtils.degToRad(THREE.MathUtils.lerp(0, 360, day));
+
+  sun.setFromSphericalCoords(1, phi, theta);
+  skyValues.sunPosition.value.copy(sun);
+  sunLight.position.copy(sun);
+  //console.log(stars);
+
+  /*if(stars && (day < 0.25 || day > 0.75)){
+    let starsVisibility = Math.abs(Math.cos(day * Math.PI));
+    stars.material.opacity = 2;
+    console.log(stars);
+    stars.visible = starsVisibility > 0.01; 
+  }*/
+}
+
+//------------------------TOWN
 function createBuilding(position, size, color = 0x3a3a3a) {
   const geometry = new THREE.BoxGeometry(size.x, size.y, size.z);
   const material = new THREE.MeshStandardMaterial({ color });
@@ -141,7 +262,7 @@ function createBuilding(position, size, color = 0x3a3a3a) {
   building.position.set(position.x, size.y / 2, position.z);
   buildingsList.push({
   mesh: building,
-  size: { ...size } // crea una copia per sicurezza
+  size: { ...size } 
   });
   return building;
 }
@@ -177,7 +298,7 @@ function addSkyscraper(scene, position) {
 }
 
 export function buildAbandonedTown(scene) {
-  const gridCount = Math.floor((OPTIONS.areaSize * 2) / OPTIONS.spacing);
+  const gridCount = Math.floor((250 * 2) / OPTIONS.spacing);
   const placed = new Set();
 
   for (let gx = -gridCount / 2; gx <= gridCount / 2; gx++) {

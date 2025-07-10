@@ -1,10 +1,12 @@
 import * as THREE from 'https://esm.sh/three@0.161.0';
 import { PointerLockControls } from 'https://esm.sh/three@0.152.2/examples/jsm/controls/PointerLockControls.js';
 import { move } from './input.js';
-import {gun} from './scene.js';
+import {gun, loadGunModel, loadShotGunModel, shotgun} from './scene.js';
 import {shoot, handleZombiePlayerDamage, zombies, hearts} from './action.js';
-import { ACCEL, DECAY, MAX_SPEED, PLAYER, buildingsList, OPTIONS } from './constants.js';
-import { showHintCollect } from './ui.js';
+import { ACCEL, DECAY, MAX_SPEED, player, buildingsList, OPTIONS, currentLevel, zombieDamage, weapon} from './constants.js';
+import { showHintCollect , endGame} from './ui.js';
+import { scene } from './main.js';
+
 
 let controls;   let speedFactor = 0;
 
@@ -29,22 +31,48 @@ export function setupControls(camera, scene, domElement) {
 }
 
 export function isColliding(firstObjPos, firstObjSize, secObjPos, secObjSize){
-    return (
+    if(
       Math.abs(firstObjPos.x - secObjPos.x) < (firstObjSize.x / 2 + secObjSize.x / 2 ) &&
-      Math.abs(firstObjPos.y - secObjPos.y) < (firstObjSize.y / 2 + secObjSize.y / 2 ) &&
+      //Math.abs(firstObjPos.y - secObjPos.y) < (firstObjSize.y / 2 + secObjSize.y / 2 ) &&
       Math.abs(firstObjPos.z - secObjPos.z) < (firstObjSize.z / 2 + secObjSize.z / 2 )
-  );
+    )
+      return true;
+    else return false;
+
 }
 
 export function collsionManagement(future, builds, Psize){
   let stop = false;
   for (const { mesh, size } of builds) {
-    if (isColliding(future, Psize, mesh.position, size)) {
+    if (isColliding(future, Psize, mesh.position, size) == true) {
       stop = true;
       break;
     }
   }
   return stop;
+}
+
+export function zombieCollision(future){
+  let stop = false;
+  for (const build of buildingsList) {
+    if (future.distanceTo(build.mesh.position) < 5) {
+      stop = true;
+      break;
+    }
+  }
+  return stop;  
+}
+
+export function zombieAlert(zombie, playerPos){
+  const dist = zombie.mesh.position.distanceTo(playerPos);
+  if(dist < 15){
+    zombie.alert = true;
+    zombie.speed = 7;
+  }
+  else{
+    zombie.alert = false;
+    zombie.speed = 2;
+  }
 }
 
 export function updateSpeedFactor(dir, d){
@@ -71,7 +99,7 @@ export function computeVelocity(speedFactor, dir, d){
   //to compute the relative right, becuase the player moves
   const right = new THREE.Vector3().crossVectors(front, controls.getObject().up).normalize();
 
-  const realSpeed = PLAYER.SPEED * speedFactor;
+  const realSpeed = player.SPEED * speedFactor;
   vel.addScaledVector(front, dir.z * realSpeed * d);
   vel.addScaledVector(right, dir.x * realSpeed * d);
   return vel;
@@ -101,7 +129,7 @@ export function playerZombieCollision(playerPos){
   for(let z = zombies.length - 1; z >= 0; z--){
     const zombie = zombies[z];
     const dist = zombie.mesh.position.distanceTo(playerPos);
-    if(dist <= 3){
+    if(dist < 4){
       stop = true;
       break;
     }
@@ -112,7 +140,7 @@ export function playerZombieCollision(playerPos){
 export function collectHeart(playerPos){
   for(const heart of hearts){
     const distance = heart.position.distanceTo(playerPos);
-    if(distance < 2 && PLAYER.LIFE < 100){
+    if(distance < 2 && player.LIFE < 100){
       return heart;
     }
   }
@@ -157,4 +185,36 @@ export function updateControls(delta) {
 
 export function getControls() {
   return controls;
+}
+
+export function changeWeapon(){
+  const controls = getControls();
+  if(currentLevel == 1){
+    loadGunModel(controls);
+    weapon.active = 'gun';
+  }
+  if(currentLevel == 2){
+      controls.getObject().remove(gun);
+      loadShotGunModel(controls);
+      weapon.active = 'shotgun';
+  }
+}
+
+export function updateLevel(){
+  if(player.kill == 20 && currentLevel == 1){
+    currentLevel ++;
+    zombieLife = 20;
+    zombieDamage = 3;
+    changeWeapon(scene);
+  }
+  if(player.kill == 30 && currentLevel == 2){
+    currentLevel ++;
+    zombieLife = 25;
+    zombieDamage = 5;
+    changeWeapon(scene);
+  }
+  if(player.kill == 40 && currentLevel == 3){
+    endGame();
+  }
+
 }

@@ -1,5 +1,5 @@
 import * as SCENE from './scene.js';
-import { setupControls, updateControls, getControls } from './controls.js';
+import { setupControls, updateControls, getControls, updateLevel, changeWeapon } from './controls.js';
 import { recoverLife, setupInput, startGame } from './input.js';
 import {updateBullets, spawnRandomZombies, updateZombies, animateHeart} from './action.js';
 
@@ -15,14 +15,16 @@ export async function init() {
   renderer = SCENE.createRenderer();
   SCENE.createFloor(scene);
   SCENE.createLights(scene);
+  SCENE.createSky(scene);
   setupControls(camera, scene, renderer.domElement);
   await SCENE.loadHeartModel();
-  SCENE.loadGunModel(getControls());
+  changeWeapon();
   SCENE.buildAbandonedTown(scene);
+  //SCENE.createStars(scene);
   recoverLife(scene);
 
   SCENE.loadZombieModel().then((zombieModel) => {
-  spawnRandomZombies(5, zombieModel);
+  spawnRandomZombies(0, zombieModel);
 });
   //spawnRandomZombies(10);
   setupInput();
@@ -36,8 +38,11 @@ function animate() {
   requestAnimationFrame(animate);
   const time = performance.now();
   const delta = (time - prevTime) / 1000;
+  SCENE.updateSun(delta, scene);
   updateControls(delta);
+  updateLevel();
   updateBullets(delta);
+  //updateRecoil(delta);
   animateHeart(delta);
   updateZombies(delta);
   renderer.render(scene, camera);
