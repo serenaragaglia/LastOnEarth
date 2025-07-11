@@ -1,16 +1,18 @@
 import * as THREE from 'https://esm.sh/three@0.161.0';
 import * as SkeletonUtils from './SkeletonUtils.js'
-import {getControls, collsionManagement, zombieAlert} from './controls.js';
+import {getControls, collsionManagement, zombieAlert, getWeapon} from './controls.js';
 import {scene} from './main.js';
-import {buildingsList, player, lifeZombie, zombieDamage, weapon, COLORS} from './constants.js';
 import { updateLowLifeBorder, updatePlayerLifeUI } from './ui.js';
-import { heartModel, zombieModel, gun} from './scene.js';
+import { heartModel, zombieModel} from './scene.js';
+import {buildingsList, player, COLORS, OPTIONS, waves, levels } from './constants.js';
 
 export const bullets = [];
 export const zombies = [];
 export const hearts = [];
 
-export   let isRecoiling;
+export let firing = false;
+let timer = 0; let returning = false; let idle = false;
+
 
 export function heartSpawn(scene, position){
   const heart = heartModel.clone();
@@ -20,11 +22,17 @@ export function heartSpawn(scene, position){
   hearts.push(heart);
 }
 
-export function animateHeart(delta){
+export function animateHeart(delta, scene){
   for(const aux of hearts){
     aux.rotation.y += delta * 2;
     const t = performance.now() * 0.02;
     aux.position.y += Math.sin(t + 2) * 0.008; 
+    aux.userData.timer += delta;
+
+    if(aux.userData.timer >= aux.userData.max){
+      scene.remove(aux);
+      hearts.splice(aux, 1);
+    }
   }
 }
 
@@ -46,45 +54,11 @@ export function bulletTrail(position){
   };
   return trail;                                              
 }
-/*
-export function shoot(){
-  const controls = getControls();
-  const ahead = controls.getObject().getObjectByName('gunFront'); //this will be used to position the bullet
-
-  const direction = new THREE.Vector3();
-  const pos = new THREE.Vector3();
-
-  ahead.getWorldPosition(pos);
-  ahead.getWorldDirection(direction);
-
-  const geometry = new THREE.SphereGeometry(0.3, 10, 10);
-  const material = new THREE.MeshBasicMaterial({color : COLORS.BULLET});
-  const mesh = new THREE.Mesh(geometry, material);
-  mesh.scale.set(0.2, 0.2, 0.8);
-  mesh.position.copy(pos);
-
-  const bulletSize = new THREE.Vector3();
-  new THREE.Box3().setFromObject(mesh).getSize(bulletSize);
-  const trail = bulletTrail(mesh.position);
-
-  const bullet = {
-    mesh,
-    bulletSize,
-    //direction : direction.clone().normalize(),
-    velocity : direction.clone().multiplyScalar(gun.userData.bulletSpeed),
-    trail,
-    life : 1
-  }
-  scene.add(mesh);
-  scene.add(bullet.trail.line);
-  bullets.push(bullet);
-}*/
 
 export function createBullets(){
   const radius = 0.05;
   const bodyHeight = 0.08;
   const tipHeight = 0.03;
-
 
   //Cylinder : radiusTop, radiusBottom, height, radialSegments, heightSegments);
   const geometry = new THREE.CylinderGeometry(radius, radius, bodyHeight, 16);
@@ -115,9 +89,10 @@ export function createBullets(){
     life,
     trail
   }
+  bullet.mesh.rotation.z = -Math.PI/2 ;
+  bullet.mesh.rotation.y = Math.PI/2 ;
   return bullet;
 }
-
 
 export function shoot(){
   //get the object attached to the camera
@@ -126,35 +101,27 @@ export function shoot(){
   const position = new THREE.Vector3();
   const direction = new THREE.Vector3();
 
-  if(weapon.active == 'gun'){
-    const front = controls.getObject().getObjectByName('gunFront'); //this will be used to position the bullet
+  const currentWeapon = getWeapon();
+    const currentFront = controls.getObject().getObjectByName('front'); //this will be used to position the bullet
 
-    front.getWorldPosition(position);
+    currentFront.getWorldPosition(position);
     bullet.mesh.position.copy(position);
 
-    front.getWorldDirection(direction);
+    controls.getObject().getWorldDirection(direction);
+    direction.normalize();
 
-    bullet.velocity = direction.clone().multiplyScalar(gun.userData.bulletSpeed);
+    bullet.velocity = direction.clone().multiplyScalar(currentWeapon.userData.bulletSpeed);
     bullet.trail = bulletTrail(bullet.mesh.position);
 
-    bullet.life = gun.userData.bulletLife;
-    bullet.mesh.rotation.z = -Math.PI/2 ;
-    bullet.mesh.rotation.y = Math.PI/2 ;
+    bullet.life = currentWeapon.userData.bulletLife;
+    firing = true;
+    idle = false;
+
     scene.add(bullet.mesh);
     scene.add(bullet.trail.line);
     bullets.push(bullet);
-  }
-
-
-
-
-
-
-
 
 }
-
-
 
 //zombie managment
 export function spawnZombie(position) {
@@ -162,10 +129,7 @@ export function spawnZombie(position) {
   const zombieInstance = SkeletonUtils.clone(zombieModel);
   zombieInstance.position.copy(position);
 
-  /*zombieInstance.traverse((node) => {
-    console.log(node.name, node.type);
-  });*/
-  zombieInstance.scale.set(1.5, 1.5, 1.5);
+  zombieInstance.scale.set(0, 0, 0,);
   scene.add(zombieInstance);
   
   const boundingBox = new THREE.Box3().setFromObject(zombieInstance);
@@ -180,22 +144,33 @@ export function spawnZombie(position) {
     
   const zombie = {
     mesh: zombieInstance,
+    life: zombieModel.userData.life,
+    damage : zombieModel.userData.damage,
+    size: zombieSize,
+    speed: 2,    
     boundingBox,
     rightLeg,
     leftLeg,
     leftArm,
     rightArm,
     lowSpine,
-    midSpine,
-    size: zombieSize,
-    speed: 2,
-    life: lifeZombie,
+    midSpine,    
+
+    leftLegAngle : 0,
+    rightLegAngle : 0,
+
+    rightArmAngle :0,
+    leftArmAngle :0,
+
     alert: false,
     lastHitCooldown : 0,
+    timer : 0,
     walkTime: Math.random() * Math.PI * 2,
+    scaleDirection : 1,
+
     target: generateRandomTarget(position),
-    damage : zombieDamage,
-    timer : 0
+    scaleTimer : 0,
+    scaleDuration : 0.5
   };
 
   zombie.leftArm.rotation.z = Math.PI/2;
@@ -205,31 +180,91 @@ export function spawnZombie(position) {
   zombies.push(zombie);
 }
 
+export function spawnRandomZombies(count) {
+  const range = 30; //max distance from which they spwan
+  for (let i = 0; i < count; i++) {
+    const x = (Math.random() - 0.5) * range * 2;
+    const z = (Math.random() - 0.5) * range * 2;
+    const y = 0;
+    
+    const playerPos = getControls().getObject().position;
+    const position = new THREE.Vector3(x, y, z);
+    position.x = THREE.MathUtils.clamp(position.x, -OPTIONS.areaSize, OPTIONS.areaSize);
+    position.z = THREE.MathUtils.clamp(position.z, -OPTIONS.areaSize, OPTIONS.areaSize);
+    if (position.distanceTo(playerPos) > 25){
+      spawnZombie(position);
+    }
+  }
+}
+
+export function startZombieWave(count){
+  waves.remaining = count;
+  waves.spawned = 0;
+  waves.spawnTimer = 0;
+  waves.isSpawning = true;
+  waves.betweenSpawn =  Math.max(1.0, 3 - levels.currentLevel * 0.3); //the time between spwan decreases when the level is higher, making it more difficult
+}
 export function zombieDance(zombie, delta){
   zombie.walkTime += delta * zombie.speed * 2;
-  const angle = Math.sin(zombie.walkTime) * 0.3;
-  const angle2 = Math.sin(zombie.walkTime + Math.PI/2) * 0.3;
-  zombie.rightArm.rotation.y = angle;
-  zombie.leftArm.rotation.y = angle2;
-  zombie.lowSpine.rotation.y = angle;
-  zombie.midSpine.rotation.y = angle;
+
+  const maxAngle = 0.4;
+
+  const targetLeft = Math.sin(zombie.walkTime) * maxAngle;
+  const targetRight = Math.cos(zombie.walkTime + 0.02) * maxAngle;
+
+  zombie.leftArmAngle = THREE.MathUtils.lerp(zombie.leftArmAngle, targetLeft, 0.2);
+  zombie.rightArmAngle = THREE.MathUtils.lerp(zombie.rightArmAngle, targetRight, 0.2);
+
+  zombie.leftArm.rotation.y = zombie.rightArmAngle;
+  zombie.rightArm.rotation.y = zombie.leftArmAngle;
+
 }
 
 export function zombieWalk(zombie, futurePos, delta){
   zombie.walkTime += delta * zombie.speed * 2;
-  const angle = Math.sin(zombie.walkTime) * 0.3;
-  const angle2 = Math.sin(zombie.walkTime + Math.PI/2) * 0.3;
-  zombie.leftLeg.rotation.x = angle;
-  zombie.rightLeg.rotation.x = angle2;
+
+  const maxAngle = 0.4;
+
+  const targetLeft = Math.sin(zombie.walkTime) * maxAngle;
+  const targetRight = Math.cos(zombie.walkTime + 0.02) * maxAngle;
+
+  zombie.leftLegAngle = THREE.MathUtils.lerp(zombie.leftLegAngle, targetLeft, 0.2);
+  zombie.rightLegAngle = THREE.MathUtils.lerp(zombie.rightLegAngle, targetRight, 0.2);
+
+  zombie.leftLeg.rotation.x = zombie.leftLegAngle;
+  zombie.rightLeg.rotation.x = zombie.rightLegAngle;
+
   zombie.mesh.position.copy(futurePos);
 }
+
 export function zombieRun(zombie, futurePos, delta){
-  zombie.walkTime += delta * zombie.speed * 3;
-  const angle = Math.sin(zombie.walkTime) * 0.3;
-  const angle2 = Math.sin(zombie.walkTime + Math.PI/2) * 0.3;
-  zombie.leftLeg.rotation.x = angle;
-  zombie.rightLeg.rotation.x = angle2 * 0.5;
+  zombie.walkTime += delta * zombie.speed * 2;
+
+  const maxAngle = 0.6;
+
+  // Calcola angoli target alternati con sin
+  const targetLeft = Math.sin(zombie.walkTime ) * maxAngle;
+  const targetRight = Math.cos(zombie.walkTime + 0.02) * maxAngle;
+
+  // Interpolazione per un movimento più morbido
+  zombie.leftLegAngle = THREE.MathUtils.lerp(zombie.leftLegAngle, targetLeft, 0.2);
+  zombie.rightLegAngle = THREE.MathUtils.lerp(zombie.rightLegAngle, targetRight, 0.2);
+
+  // Applica la rotazione
+  zombie.leftLeg.rotation.x = zombie.leftLegAngle;
+  zombie.rightLeg.rotation.x = zombie.rightLegAngle;
+
   zombie.mesh.position.copy(futurePos);
+}
+
+export function zombieSpawnAnimation(zombie, delta){
+  if(zombie.scaleTimer < zombie.scaleDuration){
+    zombie.scaleTimer += delta;
+    const t = Math.min(zombie.scaleTimer / zombie.scaleDuration , 1);
+    const scale = THREE.MathUtils.lerp(0, 1.5, t);
+    zombie.mesh.scale.set(scale, scale, scale);
+  }
+
 }
 
 function generateRandomTarget(origin) {
@@ -239,9 +274,41 @@ function generateRandomTarget(origin) {
   return new THREE.Vector3(x, 0, z);
 }
 
+export function handleZombiePlayerDamage(playerPos, delta) {
+  const hitDistance = 5;      
+  //console.log('Player life', player.LIFE);        
+  const controls = getControls();  
+  for (const zombie of zombies) {
+    if (!zombie.mesh) continue;
+
+    const dist = zombie.mesh.position.distanceTo(playerPos);
+
+    if (dist < hitDistance) {
+      if (!zombie.lastHitCooldown) zombie.lastHitCooldown = 0;
+      zombie.lastHitCooldown -= delta;
+
+      if (zombie.lastHitCooldown <= 0) {
+        player.LIFE -= zombie.damage;                  //CHANGE ACCORDING LEVEL
+        updatePlayerLifeUI();
+        updateLowLifeBorder();
+        zombie.lastHitCooldown = 1.5;             
+      }
+    } else {
+      zombie.lastHitCooldown = 0;
+    }
+  }
+  if (player.LIFE <= 0) {
+  document.getElementById('gameFilter').style.display = 'block';
+  document.getElementById('gameOverScreen').style.display = 'flex';
+  //cancelAnimationFrame(animationId);
+  controls.unlock();
+  }  
+}
+
 export function updateZombies(delta){
   for(let i = zombies.length - 1; i >= 0; i--){
     const zombie = zombies[i];
+    zombieSpawnAnimation(zombie, delta);
     if(zombie.life == 0){
       scene.remove(zombie.mesh);
       zombies.splice(i, 1);
@@ -282,7 +349,7 @@ export function updateZombies(delta){
         const zombieFuturePos = zombie.mesh.position.clone().addScaledVector(dir, zombie.speed * delta);
         zombieFuturePos.y = 0;
         let collideBuilding = collsionManagement(zombieFuturePos, buildingsList, zombie.size);
-        if((zombieFuturePos.distanceTo(playerPos) > 5)  && !collideBuilding){          
+        if((zombieFuturePos.distanceTo(playerPos) > 4)  && !collideBuilding){          
           zombieRun(zombie, zombieFuturePos, delta);
         }
       }     
@@ -290,68 +357,32 @@ export function updateZombies(delta){
   }
 }
 
-export function spawnRandomZombies(count) {
-  const range = 30; //max distance from which they spwan
-  for (let i = 0; i < count; i++) {
-    const x = (Math.random() - 0.5) * range * 2;
-    const z = (Math.random() - 0.5) * range * 2;
-    const y = 0;
-    
-    const playerPos = getControls().getObject().position;
-    const position = new THREE.Vector3(x, y, z);
-    if (position.distanceTo(playerPos) < 15 ) continue;
-    spawnZombie(position);
+export function updateSpawn(delta){
+  if(!waves.isSpawning) return;
+
+  waves.spawnTimer += delta;
+
+  if(waves.spawned >= waves.remaining){
+    waves.isSpawning = false;
+    return;
   }
-}
 
-export function handleZombiePlayerDamage(playerPos, delta) {
-  const hitDistance = 4;                //TO CHANGE ACCORDING GUN ...
-  for (const zombie of zombies) {
-    if (!zombie.mesh) continue;
-
-    const dist = zombie.mesh.position.distanceTo(playerPos);
-
-    if (dist < hitDistance) {
-      if (!zombie.lastHitCooldown) zombie.lastHitCooldown = 0;
-      zombie.lastHitCooldown -= delta;
-
-      if (zombie.lastHitCooldown <= 0) {
-        player.LIFE -= zombie.zombieDamage;                  //CHANGE ACCORDING LEVEL
-        updatePlayerLifeUI();
-        updateLowLifeBorder();
-        zombie.lastHitCooldown = 1.5;
-
-        if (player.LIFE == 0) {
-          document.getElementById('gameFilter').style.display = 'block';
-          document.getElementById('gameOverScreen').style.display = 'flex';
-          //cancelAnimationFrame(animationId);
-          controls.unlock();
-        }               
-      }
-    } else {
-      zombie.lastHitCooldown = 0;
-    }
-  }
-}
-
-//COMPUTE WHICH WEAPON THE PLAYER IS USING
-export function computeWeapon(){
-  if (weapon.active == 'gun'){
-    return gun;
-  }
-  else if(weapon.active == 'shotgun'){
-    return shotgun;
-  }
-  else if(weapon.active == 'machineGun'){
-    return machineGun;
+  if(waves.spawnTimer >= waves.betweenSpawn){
+    //const playerPos = getControls().getObject().position;
+    //const range = 30;
+    const toSpawn = waves.remaining - waves.spawned;
+    const waveCount = Math.min(toSpawn, waves.maxZombieWave);
+    spawnRandomZombies(waveCount);
+    waves.spawned += waveCount;
+    waves.spawnTimer = 0;
   }
 }
 
 export function updateBullets(delta){
   const gravity = new THREE.Vector3(0, -9.8, 0);
+  const currentWeapon = getWeapon();
   for (let i = bullets.length - 1; i >= 0; i-- ){
-    /*recoilFlag = true;
-    updateRecoil(delta);*/
+
     const bullet = bullets[i];
     bullet.velocity.addScaledVector(gravity, delta);
     const bulletFuturePos = bullet.mesh.position.clone().addScaledVector(bullet.velocity, delta);
@@ -378,10 +409,11 @@ export function updateBullets(delta){
          //console.log('Bullet - Zombie: ', distance);
           //if the bullet hits the zombie his life decreases, according to the power of the gun that the player has !!!!!!!!!
             if(distance < hitRadius){
-              zombie.lide -= computeZombieDamage();
+              zombie.life -= currentWeapon.userData.damage;
               console.log(zombie.life);
               if(zombie.life <= 0){
                 heartSpawn(scene, zombie.mesh.position);
+                player.kill++;
                 scene.remove(zombie.mesh);
                 zombies.splice(z, 1);
               } 
@@ -413,21 +445,55 @@ export function updateBullets(delta){
   }
 }
 
-let recoil = 0;
-let recoilFlag = false;
-
 export function updateRecoil(delta){
-  //recoilFlag = true;
-  const originalRot = gun.rotation.x;
-  const originalPos = gun.position.z;
-  recoil += delta
-  let time = Math.min(recoil/0.2 , 1);
-  gun.rotation.x = 0 +  Math.sin(time * Math.PI) *0.2;
-  gun.position.z = -1 + Math.sin(time * Math.PI) * 0.2;
+  const currentWeapon = getWeapon();
+  if(!currentWeapon) return;
+  const currentRotation = currentWeapon.rotation;
+  const targetRotX = currentWeapon.userData.rotRecoilX;
+  const targetRotZ = currentWeapon.userData.rotRecoilZ;
 
-  setTimeout(() => {
-    gun.rotation.x = 0;
-    gun.position.z = -1;        
-    recoilFlag = false;
-  }, 150);
+    if(firing == true){
+      timer += delta;
+      const t  = timer / 0.3;
+
+      if( t >= 1){
+        currentRotation.x = targetRotX;
+        currentRotation.z = targetRotZ;
+        timer = 0;
+        firing = false;
+        returning = true;
+      } else {
+        const easedT = easeOut(t);
+        currentRotation.x = THREE.MathUtils.lerp(0, targetRotX, easedT);
+        currentRotation.z = THREE.MathUtils.lerp(0, targetRotZ, easedT);
+      }
+      currentWeapon.rotation.x = currentRotation.x;
+      currentWeapon.rotation.z = currentRotation.z;    
+    }
+    else if(returning == true){
+      timer += delta;
+      const t = timer / 0.5;
+
+      if(t >= 1){
+        currentRotation.x = 0;
+        currentRotation.z = 0;
+        returning = false;
+        idle = true;
+      } else {
+        const easedT = easeIn(t);
+        currentRotation.x = THREE.MathUtils.lerp(targetRotX, 0, easedT);
+        currentRotation.z = THREE.MathUtils.lerp(targetRotZ, 0, easedT);
+      }
+      currentWeapon.rotation.x = currentRotation.x;
+      currentWeapon.rotation.z = currentRotation.z;
+    }
+  
+}
+
+export function easeOut(t){
+  return 1 - Math.pow(1 - t, 3);
+}
+
+export function easeIn(t){
+  return t * t * t ;
 }

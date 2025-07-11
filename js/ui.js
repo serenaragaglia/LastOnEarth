@@ -48,3 +48,15 @@ export function endGame() {
   screen.classList.remove('hidden');
   screen.classList.add('active');
 }
+
+export function showLevelTransition(levelNumber) {
+  const div = document.getElementById('levelTransition');
+  div.textContent = `Level ${levelNumber}`;
+  
+  div.classList.add('fade-in');
+
+  // Dopo 2 secondi, inizia il fade-out
+  setTimeout(() => {
+    div.classList.remove('fade-in');
+  }, 2000); // visibile per 2 secondi (puoi regolare)
+}

@@ -1,7 +1,8 @@
 import { collectHeart, getControls } from './controls.js';
-import { player } from './constants.js';
-import { updatePlayerLifeUI, updateLowLifeBorder } from './ui.js';
-import { hearts } from './action.js';
+import { defaultFov, player, weapon, zoomedFov, levels } from './constants.js';
+import { updatePlayerLifeUI, updateLowLifeBorder, showLevelTransition } from './ui.js';
+import { hearts, shoot } from './action.js';
+import { camera } from './main.js';
 
 export const move = { forward: false, backward: false, left: false, right: false };
 export const targetTime = 0 ;
@@ -30,6 +31,7 @@ export function startGame(){
   window.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') {
       document.getElementById('startScreen').style.display = 'none';
+      showLevelTransition(levels.currentLevel);
       //init(); // ← avvia il gioco
     }
   })
@@ -55,6 +57,34 @@ export function recoverLife(scene){
     }
   });
 }
+
+const crosshair = document.getElementById('crosshair');
+
+export function muoseClick(event){
+  if(event.button == 0){
+    shoot();
+  }
+}
+
+document.addEventListener('mousedown', (event) => {
+    if(event.button == 2 && weapon.active == 'shotgun'){
+      crosshair.style.display = 'block';
+
+      camera.fov = zoomedFov;
+      camera.updateProjectionMatrix();
+
+  }
+});
+
+document.addEventListener('mouseup' , (event) => {
+  if(event.button == 2){
+    crosshair.style.display = 'none';
+
+    camera.fov = defaultFov;
+    camera.updateProjectionMatrix();
+  }
+});
+
 
 /*
 export const toggle = document.getElementById('toggleDayNight');

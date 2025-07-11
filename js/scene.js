@@ -1,7 +1,7 @@
 import * as THREE from 'https://esm.sh/three@0.161.0';
 import { GLTFLoader } from 'https://esm.sh/three@0.161.0/examples/jsm/loaders/GLTFLoader.js';
 import {Sky} from './sky.js';
-import { buildingsList, OPTIONS, transition} from './constants.js';
+import { buildingsList, OPTIONS, defaultFov} from './constants.js';
 import { targetTime } from './input.js';
 export let gun = null;
 export let shotgun = null;
@@ -38,16 +38,20 @@ export async function loadGunModel(controls) {
     gun.userData.weaponType = 'gun';
     gun.userData.damage = 1;
     gun.userData.hitDistance  = 6;
-    gun.userData.bulletSpeed = 50;
+    gun.userData.bulletSpeed = 80;
     gun.userData.bulletLife = 2;
+    gun.userData.recoilY = 0.05;
+    gun.userData.rotRecoilX = 0.3;
+    gun.userData.rotRecoilZ = 0.05;
 
-    const gunFront = new THREE.Object3D(); 
-    gunFront.name = 'gunFront';
-    gunFront.position.set(0.4, 0.5, 3);
-    gun.add(gunFront);
 
-    const axes = new THREE.AxesHelper(10); // lunghezza degli assi
-    gunFront.add(axes);
+    const front = new THREE.Object3D(); 
+    front.name = 'front';
+    front.position.set(0.4, 0.5, 3);
+    gun.add(front);
+
+    /*const axes = new THREE.AxesHelper(10); // lunghezza degli assi
+    front.add(axes);*/
   }, undefined, (err) => {
     console.error('Errore nel caricamento della pistola:', err);
   });
@@ -61,23 +65,27 @@ export async function loadShotGunModel(controls) {
     shotgun.scale.set(2, 2, 2);
 
     shotgun.rotation.y= Math.PI/2;
-    shotgun.position.set(0.4, -0.55, -1.0); //position wrt camera
+    shotgun.position.set(0.4, -0.5, -1.0); //position wrt camera
     controls.getObject().add(shotgun);  
 
     shotgun.userData.weaponType = 'shotgun';
     shotgun.userData.damage = 3;
     shotgun.userData.hitDistance  = 4;
-    shotgun.userData.bulletSpeed = 60;
+    shotgun.userData.bulletSpeed = 65;
     shotgun.userData.bulletLife = 1;
+    shotgun.userData.posRecoilY = 0.08;
+    shotgun.userData.rotRecoilX = 0.4;
+    shotgun.userData.rotRecoilZ = 0.08;
 
-    /*const gunFront = new THREE.Object3D(); 
-    gunFront.name = 'gunFront';
-    gunFront.position.set(0.4, 0.5, 3);
-    gun.add(gunFront);
-    console.log(gun.position);*/
+    const front = new THREE.Object3D(); 
+    front.name = 'front';
+    front.position.set(0.5, 0.08, -0.006);
+    shotgun.add(front);
+    console.log(shotgun.position);
+    console.log(front.position);
 
-    const axes = new THREE.AxesHelper(10); // lunghezza degli assi
-    shotgun.add(axes);
+    /*const axes = new THREE.AxesHelper(10); // lunghezza degli assi
+    front.add(axes);*/
   }, undefined, (err) => {
     console.error('Errore nel caricamento della pistola:', err);
   });
@@ -92,10 +100,10 @@ export async function loadZombieModel() {
       (gltf) => {
         zombieModel = gltf.scene;
         zombieModel.name = 'zombieModel';
-        //zombieModel.scale.set(5, 5, 5);
-        //console.log(zombieModel);
-        const axes = new THREE.AxesHelper(10);
-        zombieModel.add(axes);
+        zombieModel.userData.life = 10;
+        zombieModel.userData.damage = 10;      
+        /*const axes = new THREE.AxesHelper(10);
+        zombieModel.add(axes);*/
         resolve(zombieModel);
       },
       undefined,
@@ -121,8 +129,9 @@ export async function loadHeartModel() {
         heartModel.name = 'heartModel';
         heartModel.position.set(0.4, 0.5, 13);
         heartModel.scale.set(0.5, 0.5, 0.5);
-        const axes = new THREE.AxesHelper(10);
-        heartModel.add(axes);
+
+        heartModel.userData.timer = 0;
+        heartModel.userData.max = 15;
 
         resolve(heartModel);
       },
@@ -147,7 +156,7 @@ export function createScene() {
 }
 
 export function createCamera() {
-  const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+  const camera = new THREE.PerspectiveCamera(defaultFov, window.innerWidth / window.innerHeight, 0.1, 1000);
   camera.position.y = 2;
   return camera;
 }
@@ -326,3 +335,4 @@ export function buildAbandonedTown(scene) {
     }
   }
 }
+

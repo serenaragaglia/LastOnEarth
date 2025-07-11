@@ -1,8 +1,13 @@
-export const currentLevel = 2;
+export const levels = {
+  currentLevel : 1
+} 
 
 export const weapon = {
   active : null
 };
+
+export const defaultFov = 75;
+export const zoomedFov = 40;
 
 export const player = {
   SPEED: 7,
@@ -21,19 +26,25 @@ export const OPTIONS = {
   areaSize: 200,
   spacing: 10,
   centerRadius: 10,
-  innerDensity: 0,
-  outerDensity: 0
+  innerDensity: 0.4,
+  outerDensity: 0.2
 }
 
 export const MAX_SPEED = 2;  
 export const ACCEL = 1.5;         
 export const DECAY = 2.5;         
 
-//zombie
-export const lifeZombie = 10;
-export const zombieDamage = 10;
-
 export const buildingsList = [];
 
 export const transition = 0.2;
 
+//zombiesù
+export let waves = {
+  remaining : 0,
+  spawned : 0,
+  betweenSpawn : 60,
+  spawnTimer : 0,
+  isSpawning : false,
+  maxZombieWave : 5,
+  minZombieWave : 3,
+}
