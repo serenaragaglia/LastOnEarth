@@ -1,6 +1,6 @@
 import * as THREE from 'https://esm.sh/three@0.161.0';
 import * as SkeletonUtils from './SkeletonUtils.js'
-import {getControls, collsionManagement, zombieAlert, getWeapon} from './controls.js';
+import {getControls, collsionManagement, zombieAlert, getWeapon, zombieCollision} from './controls.js';
 import {scene} from './main.js';
 import { updateLowLifeBorder, updatePlayerLifeUI } from './ui.js';
 import { heartModel, zombieModel} from './scene.js';
@@ -156,6 +156,8 @@ export function spawnZombie(position) {
     lowSpine,
     midSpine,    
 
+    midSpineAngle : 0,
+
     leftLegAngle : 0,
     rightLegAngle : 0,
 
@@ -207,16 +209,19 @@ export function startZombieWave(count){
 export function zombieDance(zombie, delta){
   zombie.walkTime += delta * zombie.speed * 2;
 
-  const maxAngle = 0.4;
+  const maxAngle = Math.PI/9;
 
   const targetLeft = Math.sin(zombie.walkTime) * maxAngle;
   const targetRight = Math.cos(zombie.walkTime + 0.02) * maxAngle;
+  const target = Math.cos(zombie.walkTime + 0.02) * maxAngle;
 
   zombie.leftArmAngle = THREE.MathUtils.lerp(zombie.leftArmAngle, targetLeft, 0.2);
   zombie.rightArmAngle = THREE.MathUtils.lerp(zombie.rightArmAngle, targetRight, 0.2);
+  zombie.midSpineAngle = THREE.MathUtils.lerp(zombie.midSpineAngle, target, 0.2);
 
   zombie.leftArm.rotation.y = zombie.rightArmAngle;
   zombie.rightArm.rotation.y = zombie.leftArmAngle;
+  zombie.lowSpine.rotation.x = zombie.midSpineAngle;
 
 }
 
@@ -328,29 +333,27 @@ export function updateZombies(delta){
         zombie.timer += delta;
         let randomDir = zombie.target.clone().sub(zombie.mesh.position).normalize();
         let futureRanPos = zombie.mesh.position.clone().addScaledVector(randomDir, zombie.speed * delta);        
-
-        let collide = collsionManagement(futureRanPos, buildingsList, zombie.size);
-        let zombieCollide = collsionManagement(futureRanPos, zombies, zombie.size);
         futureRanPos.y = 0 ;
 
+        let collide = zombieCollision(zombie, randomDir, 15);
+        
         //if more than 5s passed, change target
-        if(zombie.timer > 5 && (collide || zombieCollide || futureRanPos.distanceTo(zombie.target) < 5) ){
+        if(zombie.timer > 5 || !collide){
           zombie.target = generateRandomTarget(zombie.mesh.position);
-          randomDir = zombie.target.clone().sub(zombie.mesh.position).normalize();
-          futureRanPos = zombie.mesh.position.clone().addScaledVector(randomDir, zombie.speed * delta);  
-          futureRanPos.y = 0;
           zombie.timer = 0;
+        }else{
+          zombie.mesh.lookAt(zombie.target);
+          zombieWalk(zombie, futureRanPos, delta);          
         }
-        zombie.mesh.lookAt(zombie.target);
-        zombieWalk(zombie, futureRanPos, delta);
+
       }
       else if(zombie.alert == true){
         zombie.mesh.lookAt(playerPos);
-        const zombieFuturePos = zombie.mesh.position.clone().addScaledVector(dir, zombie.speed * delta);
+        const zombieFuturePos = zombie.mesh.position.clone().addScaledVector(dir, zombie.speed * delta) ;
         zombieFuturePos.y = 0;
         let collideBuilding = collsionManagement(zombieFuturePos, buildingsList, zombie.size);
-        if((zombieFuturePos.distanceTo(playerPos) > 4)  && !collideBuilding){          
-          zombieRun(zombie, zombieFuturePos, delta);
+        if(!collideBuilding && zombieFuturePos.distanceTo(playerPos) > 6){          
+          zombieRun(zombie, zombieFuturePos, delta);          
         }
       }     
     }
@@ -368,8 +371,6 @@ export function updateSpawn(delta){
   }
 
   if(waves.spawnTimer >= waves.betweenSpawn){
-    //const playerPos = getControls().getObject().position;
-    //const range = 30;
     const toSpawn = waves.remaining - waves.spawned;
     const waveCount = Math.min(toSpawn, waves.maxZombieWave);
     spawnRandomZombies(waveCount);

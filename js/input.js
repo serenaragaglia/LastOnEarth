@@ -67,13 +67,14 @@ export function muoseClick(event){
 }
 
 document.addEventListener('mousedown', (event) => {
-    if(event.button == 2 && weapon.active == 'shotgun'){
+    if(event.button == 2 && (weapon.active == 'shotgun' || weapon.active == 'smg')){
       crosshair.style.display = 'block';
 
       camera.fov = zoomedFov;
       camera.updateProjectionMatrix();
 
   }
+  
 });
 
 document.addEventListener('mouseup' , (event) => {

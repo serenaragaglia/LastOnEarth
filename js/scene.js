@@ -2,9 +2,9 @@ import * as THREE from 'https://esm.sh/three@0.161.0';
 import { GLTFLoader } from 'https://esm.sh/three@0.161.0/examples/jsm/loaders/GLTFLoader.js';
 import {Sky} from './sky.js';
 import { buildingsList, OPTIONS, defaultFov} from './constants.js';
-import { targetTime } from './input.js';
 export let gun = null;
 export let shotgun = null;
+export let smg = null;
 export let zombieModel = null;
 export let heartModel = null;
 export let day = 0;
@@ -92,6 +92,40 @@ export async function loadShotGunModel(controls) {
 
 }
 
+export async function loadSMGModel(controls) {
+  const loader = new GLTFLoader();
+  loader.load('./models/smg.glb', (gltf) => {
+    smg = gltf.scene;
+    smg.scale.set(2, 2, 2);
+
+    smg.rotation.y= Math.PI;
+    smg.position.set(0.4, -0.5, -1.0); //position wrt camera
+    controls.getObject().add(smg);  
+
+    smg.userData.weaponType = 'smg';
+    smg.userData.damage = 4;
+    smg.userData.hitDistance  = 3;
+    smg.userData.bulletSpeed = 80;
+    smg.userData.bulletLife = 1;
+    smg.userData.posRecoilY = 0.1;
+    smg.userData.rotRecoilX = 0.45;
+    smg.userData.rotRecoilZ = 0.1;
+
+    const front = new THREE.Object3D(); 
+    front.name = 'front';
+    front.position.set(0, 0.08, 0.25);
+    smg.add(front);
+    console.log(smg.position);
+    console.log(front.position);
+
+    /*const axes = new THREE.AxesHelper(10); // lunghezza degli assi
+    front.add(axes);*/
+  }, undefined, (err) => {
+    console.error('Errore nel caricamento della pistola:', err);
+  });
+
+}
+
 export async function loadZombieModel() {
   const loader = new GLTFLoader();
 
@@ -166,6 +200,31 @@ export function createRenderer() {
   renderer.setSize(window.innerWidth, window.innerHeight);
   document.body.appendChild(renderer.domElement);
   return renderer;
+}
+
+export function createMinimapCamera() {
+  const minimapCamera = new THREE.OrthographicCamera(-50, 50, 50, -50, 0.1, 1000);
+  minimapCamera.position.set(0, 100, 0);
+  minimapCamera.lookAt(0, 0, 0);
+  return minimapCamera;
+}
+
+export function renderMinimap(renderer, scene, camera, minimapCamera) {
+  minimapCamera.position.x = camera.position.x;
+  minimapCamera.position.z = camera.position.z;
+  minimapCamera.lookAt(camera.position.x, 0, camera.position.z);
+
+  renderer.clear();
+  renderer.render(scene, minimapCamera);
+}
+
+export function createMinimapCanvas(){
+  const minimapCanvas = document.getElementById('minimap');
+  const minimapRenderer = new THREE.WebGLRenderer({ canvas: minimapCanvas });
+  minimapRenderer.setSize(200, 200, false);
+  minimapRenderer.setPixelRatio(window.devicePixelRatio);
+  return minimapRenderer;
+  
 }
 
 export function createFloor(scene) {
@@ -335,4 +394,6 @@ export function buildAbandonedTown(scene) {
     }
   }
 }
+
+
 

@@ -1,8 +1,8 @@
 import * as THREE from 'https://esm.sh/three@0.161.0';
 import { PointerLockControls } from 'https://esm.sh/three@0.152.2/examples/jsm/controls/PointerLockControls.js';
 import { move, muoseClick } from './input.js';
-import {gun, loadGunModel, loadShotGunModel, shotgun, zombieModel} from './scene.js';
-import {handleZombiePlayerDamage, zombies, hearts, spawnRandomZombies, startZombieWave} from './action.js';
+import {gun, loadGunModel, loadShotGunModel, shotgun, zombieModel, smg, loadSMGModel} from './scene.js';
+import {handleZombiePlayerDamage, zombies, hearts, startZombieWave} from './action.js';
 import { ACCEL, DECAY, MAX_SPEED, player, buildingsList, OPTIONS, levels, weapon} from './constants.js';
 import { showHintCollect , endGame, updatePlayerLifeUI, showLevelTransition} from './ui.js';
 import { scene } from './main.js';
@@ -35,13 +35,17 @@ export async function changeWeapon(){
   if(levels.currentLevel == 1){
     await loadGunModel(controls);
     weapon.active = 'gun';
-    //console.log('ARMA CORRENTE', weapon.active);
   }
   if(levels.currentLevel == 2){
       controls.getObject().remove(gun);
       await loadShotGunModel(controls);
       weapon.active = 'shotgun';
-      //console.log('ARMA CORRENTE', weapon.active);
+  }
+  if(levels.currentLevel == 3){
+      controls.getObject().remove(shotgun);
+      await loadSMGModel(controls);
+      weapon.active = 'smg';
+
   }
 }
 
@@ -53,8 +57,8 @@ export function getWeapon(){
   else if(weapon.active == 'shotgun'){
     return shotgun;
   }
-  else if(weapon.active == 'machineGun'){
-    return machineGun;
+  else if(weapon.active == 'smg'){
+    return smg;
   }
 }
 
@@ -212,15 +216,17 @@ export function updateLevel(){
   }
 }
 
-export function zombieCollision(future){
-  let stop = false;
-  for (const build of buildingsList) {
-    if (future.distanceTo(build.mesh.position) < 5) {
-      stop = true;
-      break;
-    }
-  }
-  return stop;  
+export function zombieCollision(zombie, direction, distance){
+
+  const origin = zombie.mesh.position.clone();
+  origin.y += 1; // alza il punto per evitare attraversamento del pavimento
+
+  const raycaster = new THREE.Raycaster(origin, direction.clone().normalize(), 5, distance);
+  const buildings = buildingsList.map(b => b.mesh); // oggetti fisici in scena
+
+  const hits = raycaster.intersectObjects(buildings, false);
+  return hits.length === 0;
+
 }
 
 export function zombieAlert(zombie, playerPos){
@@ -241,7 +247,7 @@ export function playerZombieCollision(playerPos){
   for(let z = zombies.length - 1; z >= 0; z--){
     const zombie = zombies[z];
     const dist = zombie.mesh.position.distanceTo(playerPos);
-    if(dist < 4){
+    if(dist < 5){
       stop = true;
       break;
     }

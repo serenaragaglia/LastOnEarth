@@ -1,20 +1,21 @@
 import * as SCENE from './scene.js';
-import { setupControls, updateControls, updateLevel, changeWeapon, getWeapon } from './controls.js';
+import { setupControls, updateControls, updateLevel, changeWeapon } from './controls.js';
 import { recoverLife, setupInput, startGame } from './input.js';
 import {updateBullets, spawnRandomZombies, updateZombies, animateHeart, updateRecoil, updateSpawn} from './action.js';
-import { levels } from './constants.js';
-import { showLevelTransition } from './ui.js';
 export let scene;
-export let camera, renderer;
+export let camera, renderer, minimapRenderer;
+export let minimapCamera;
 
 document.getElementById('startScreen').style.display = 'flex';
 startGame();
 
+
 export async function init() {
   scene = SCENE.createScene();
   camera = SCENE.createCamera();
+  minimapRenderer = SCENE.createMinimapCanvas();
+  minimapCamera = SCENE.createMinimapCamera();
   renderer = SCENE.createRenderer();
-
   SCENE.createFloor(scene);
   SCENE.createLights(scene);
   SCENE.createSky(scene);
@@ -27,6 +28,7 @@ export async function init() {
   await changeWeapon();
   recoverLife(scene);
   setupInput();
+
   animate();
 }
 
@@ -45,6 +47,7 @@ function animate() {
   updateZombies(delta);
   updateSpawn(delta);
   renderer.render(scene, camera);
+  SCENE.renderMinimap(minimapRenderer, scene, camera, minimapCamera);
   prevTime = time;
 }
 
