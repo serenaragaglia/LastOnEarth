@@ -1,7 +1,9 @@
 import * as THREE from 'https://esm.sh/three@0.161.0';
 import { GLTFLoader } from 'https://esm.sh/three@0.161.0/examples/jsm/loaders/GLTFLoader.js';
 import {Sky} from './sky.js';
-import { buildingsList, OPTIONS, defaultFov} from './constants.js';
+import { buildingsList, OPTIONS, defaultFov, zombieLife} from './constants.js';
+import { scene, minimapScene } from './main.js';
+import { getControls } from './controls.js';
 export let gun = null;
 export let shotgun = null;
 export let smg = null;
@@ -12,6 +14,7 @@ export let sun;
 export let skyValues;
 export let sunLight;
 export let stars;
+export let zombieMarkers = [];
 // ----------LOADER
 
 //Function to load textures
@@ -65,7 +68,7 @@ export async function loadShotGunModel(controls) {
     shotgun.scale.set(2, 2, 2);
 
     shotgun.rotation.y= Math.PI/2;
-    shotgun.position.set(0.4, -0.5, -1.0); //position wrt camera
+    shotgun.position.set(0.4, -0.4, -1.0); //position wrt camera
     controls.getObject().add(shotgun);  
 
     shotgun.userData.weaponType = 'shotgun';
@@ -79,7 +82,7 @@ export async function loadShotGunModel(controls) {
 
     const front = new THREE.Object3D(); 
     front.name = 'front';
-    front.position.set(0.5, 0.08, -0.006);
+    front.position.set(0.5, 0.1, -0.006);
     shotgun.add(front);
     console.log(shotgun.position);
     console.log(front.position);
@@ -99,7 +102,7 @@ export async function loadSMGModel(controls) {
     smg.scale.set(2, 2, 2);
 
     smg.rotation.y= Math.PI;
-    smg.position.set(0.4, -0.5, -1.0); //position wrt camera
+    smg.position.set(-0.4, 2.2, -0.7); //position wrt camera
     controls.getObject().add(smg);  
 
     smg.userData.weaponType = 'smg';
@@ -113,13 +116,13 @@ export async function loadSMGModel(controls) {
 
     const front = new THREE.Object3D(); 
     front.name = 'front';
-    front.position.set(0, 0.08, 0.25);
+    front.position.set(0, 0.1, -1);
     smg.add(front);
     console.log(smg.position);
     console.log(front.position);
 
-    /*const axes = new THREE.AxesHelper(10); // lunghezza degli assi
-    front.add(axes);*/
+    const axes = new THREE.AxesHelper(10); // lunghezza degli assi
+    front.add(axes);
   }, undefined, (err) => {
     console.error('Errore nel caricamento della pistola:', err);
   });
@@ -133,11 +136,19 @@ export async function loadZombieModel() {
     loader.load('./models/zombie.glb',
       (gltf) => {
         zombieModel = gltf.scene;
+        //recursive search insiede the model and its children
+        zombieModel.traverse(child => {
+          if (child.isMesh) {
+            child.castShadow = true;        
+            child.receiveShadow = true;    
+            child.material.side = THREE.FrontSide; //to not have transparencies
+          }
+        });
         zombieModel.name = 'zombieModel';
-        zombieModel.userData.life = 10;
-        zombieModel.userData.damage = 10;      
+        zombieModel.userData.life = zombieLife.level1;
+        zombieModel.userData.damage = 10;     
         /*const axes = new THREE.AxesHelper(10);
-        zombieModel.add(axes);*/
+        zombieModel.add(axes);*/        
         resolve(zombieModel);
       },
       undefined,
@@ -160,6 +171,12 @@ export async function loadHeartModel() {
     loader.load('./models/heart__sketchfabweeklychallenge.glb',
       (gltf) => {
         heartModel = gltf.scene;
+        heartModel.traverse(child => {
+          if (child.isMesh) {
+            child.castShadow = true;          
+            child.material.side = THREE.FrontSide; //to not have transparencies
+          }
+        });
         heartModel.name = 'heartModel';
         heartModel.position.set(0.4, 0.5, 13);
         heartModel.scale.set(0.5, 0.5, 0.5);
@@ -196,35 +213,12 @@ export function createCamera() {
 }
 
 export function createRenderer() {
-  const renderer = new THREE.WebGLRenderer();
+  const renderer = new THREE.WebGLRenderer({antialias : true});
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   renderer.setSize(window.innerWidth, window.innerHeight);
   document.body.appendChild(renderer.domElement);
   return renderer;
-}
-
-export function createMinimapCamera() {
-  const minimapCamera = new THREE.OrthographicCamera(-50, 50, 50, -50, 0.1, 1000);
-  minimapCamera.position.set(0, 100, 0);
-  minimapCamera.lookAt(0, 0, 0);
-  return minimapCamera;
-}
-
-export function renderMinimap(renderer, scene, camera, minimapCamera) {
-  minimapCamera.position.x = camera.position.x;
-  minimapCamera.position.z = camera.position.z;
-  minimapCamera.lookAt(camera.position.x, 0, camera.position.z);
-
-  renderer.clear();
-  renderer.render(scene, minimapCamera);
-}
-
-export function createMinimapCanvas(){
-  const minimapCanvas = document.getElementById('minimap');
-  const minimapRenderer = new THREE.WebGLRenderer({ canvas: minimapCanvas });
-  minimapRenderer.setSize(200, 200, false);
-  minimapRenderer.setPixelRatio(window.devicePixelRatio);
-  return minimapRenderer;
-  
 }
 
 export function createFloor(scene) {
@@ -235,8 +229,9 @@ export function createFloor(scene) {
     repeat: { x: 10, y: 10 }
   });
 
-  const material = new THREE.MeshBasicMaterial({ map: texture });
+  const material = new THREE.MeshLambertMaterial({ map: texture });
   const floor = new THREE.Mesh(geometry, material);
+  floor.receiveShadow = true;
   floor.rotation.x = -Math.PI / 2;
   const edges = new THREE.EdgesGeometry(geometry);
   const line = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: 0xff0000 }));
@@ -245,12 +240,27 @@ export function createFloor(scene) {
 }
 
 export function createLights(scene) {
-sunLight = new THREE.DirectionalLight(0xffffff, 1.0);
-sunLight.position.set(0, 100, 0);
-scene.add(sunLight);
+  sunLight = new THREE.DirectionalLight(0xffffff, 1.0);
+  sunLight.position.set(0, 100, 0);
+  sunLight.castShadow = true;
 
-const ambient = new THREE.AmbientLight(0xffffff, 0.4);
-scene.add(ambient);
+
+  sunLight.shadow.mapSize.width = 1024;
+  sunLight.shadow.mapSize.height = 1024;
+
+  
+  const d = 200;
+  sunLight.shadow.camera.left = -d;
+  sunLight.shadow.camera.right = d;
+  sunLight.shadow.camera.top = d;
+  sunLight.shadow.camera.bottom = -d;
+  sunLight.shadow.camera.near = 10;
+  sunLight.shadow.camera.far = 500;
+
+  scene.add(sunLight);
+
+  const ambient = new THREE.AmbientLight(0xffffff, 0.4);
+  scene.add(ambient);
 }
 
 export function createStars(scene){
@@ -322,6 +332,77 @@ export function updateSun(delta){
   }*/
 }
 
+export function createMinimapScene(){
+  const scene = new THREE.Scene();
+  return scene;
+}
+
+export function createMinimapCamera(){
+  const camera = new THREE.OrthographicCamera(-50, 50, 50, -50, 0.1, 1000);
+  camera.position.set(0, 100, 0);
+  //camera.lookAt(0,0,0);
+  camera.up.set(0, 0, -1);
+  return camera;
+}
+
+export function createMinimapRenderer() {
+  const renderer = new THREE.WebGLRenderer({alpha : true});
+
+  renderer.setSize(200, 200);
+  document.getElementById('minimap').appendChild(renderer.domElement);
+  return renderer;
+}
+
+export function updateMinimap(camera, playerMarker){
+  const controls = getControls();
+  const player = controls.getObject().position;
+  const direction = new THREE.Vector3();
+  
+  controls.getObject().getWorldDirection(direction);
+
+  camera.position.set(player.x , 100, player.z);
+  playerMarker.position.set(player.x, 2, player.z);  
+
+  camera.lookAt(player.x, 0, player.z);
+
+  //playerMarker.rotation.z = Math.PI / 2;
+  const axes  = new THREE.AxesHelper(10);
+  playerMarker.add(axes);
+  
+
+}
+
+export function createPlayerMarker(){
+  const geometry = new THREE.ConeGeometry(2, 5, 32);
+  const material = new THREE.MeshBasicMaterial({color : 0xf000f0});
+  const marker = new THREE.Mesh(geometry, material);
+  marker.rotation.x = -Math.PI/2;
+  
+  //marker.position.set(0, 2, -1);
+  scene.add(marker);
+  return marker;
+}
+
+export function createZombieMarker(){
+
+  const geometry = new THREE.SphereGeometry(2, 5, 100);
+  const material = new THREE.MeshBasicMaterial({color : 0xff0000});
+  const marker = new THREE.Mesh(geometry, material);
+  scene.add(marker);
+  return marker;
+
+}
+
+export function updateZombieMarker(zombie){
+  
+  let marker = zombie.marker;
+  marker.position.set(zombie.mesh.position.x, 2, zombie.mesh.position.z);
+
+  zombieMarkers.push(marker);
+  
+ // return zombieMarkers;
+}
+
 //------------------------TOWN
 function createBuilding(position, size, color = 0x3a3a3a) {
   const geometry = new THREE.BoxGeometry(size.x, size.y, size.z);
@@ -332,6 +413,7 @@ function createBuilding(position, size, color = 0x3a3a3a) {
   mesh: building,
   size: { ...size } 
   });
+  building.castShadow = true;
   return building;
 }
 
@@ -346,6 +428,7 @@ function addRoof(scene, baseMesh, size) {
     baseMesh.position.y + size.y / 2 + (size.y * 0.25),
     baseMesh.position.z
   );
+  roof.castShadow = true;
   scene.add(roof);
 }
 

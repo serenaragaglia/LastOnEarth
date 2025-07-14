@@ -38,7 +38,7 @@ export const buildingsList = [];
 
 export const transition = 0.2;
 
-//zombiesù
+//zombies
 export let waves = {
   remaining : 0,
   spawned : 0,
@@ -47,4 +47,10 @@ export let waves = {
   isSpawning : false,
   maxZombieWave : 5,
   minZombieWave : 3,
+}
+
+export let zombieLife ={
+  level1 : 10,
+  level2 : 20,
+  level3 : 25
 }

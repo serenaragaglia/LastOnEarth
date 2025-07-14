@@ -21,23 +21,27 @@
     <div id="lifeBar"></div>
   </div>
   <div id="lowLifeBorder"></div>
+
   <div id="levelTransition">Level </div>
+
 <div id="pickupHint">Press [E] to collect</div>
+
 <div id="crosshair"></div>
-<div id="win-screen" class="hidden">
+
+<div id="minimap"></div>
+
+
+<div id="win-screen" class="overlayScreen">
   <div class="message">Victory 🏆</div>
   <div class="message">You're a legend!</div>
+  <button onclick="restartGame()">Restart</button>
 </div>
-
-  <div id="minimapContainer">
-    <canvas id="minimap"></canvas>
-  </div>
 
   <div id="gameFilter"></div>
   <div id="gameOverScreen" class="overlayScreen">
     <h1>GAME OVER</h1>
     <p>You tried…</p>
-    <button onclick="restartGame()">Riprova</button>
+    <button onclick="restartGame()">Try Again</button>
   </div>
 
 </body>

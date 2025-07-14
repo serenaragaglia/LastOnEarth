@@ -2,10 +2,10 @@ import * as THREE from 'https://esm.sh/three@0.161.0';
 import { PointerLockControls } from 'https://esm.sh/three@0.152.2/examples/jsm/controls/PointerLockControls.js';
 import { move, muoseClick } from './input.js';
 import {gun, loadGunModel, loadShotGunModel, shotgun, zombieModel, smg, loadSMGModel} from './scene.js';
-import {handleZombiePlayerDamage, zombies, hearts, startZombieWave} from './action.js';
-import { ACCEL, DECAY, MAX_SPEED, player, buildingsList, OPTIONS, levels, weapon} from './constants.js';
-import { showHintCollect , endGame, updatePlayerLifeUI, showLevelTransition} from './ui.js';
-import { scene } from './main.js';
+import {handleZombiePlayerDamage, zombies, hearts, startZombieWave, updateZombieHealthbar} from './action.js';
+import { ACCEL, DECAY, MAX_SPEED, player, buildingsList, OPTIONS, levels, weapon, zombieLife} from './constants.js';
+import { showHintCollect , endGame, updatePlayerLifeUI, showLevelTransition, updateLowLifeBorder} from './ui.js';
+import {  scene } from './main.js';
 
 
 let controls;   let speedFactor = 0;
@@ -28,6 +28,7 @@ export function setupControls(camera, scene, domElement) {
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
   });
+  
 }
 
 export async function changeWeapon(){
@@ -145,19 +146,17 @@ export function collectHeart(playerPos){
 
 export function updateControls(delta) {
   if (!controls || !controls.isLocked) return; //if the player is not moving
-
   const direction = new THREE.Vector3(); //vector to save the directionin which the player is moving
   if (move.forward) direction.z += 1;
   if (move.backward) direction.z -= 1;
   if (move.left) direction.x -= 1;
   if (move.right) direction.x += 1;
   direction.normalize(); //to only have the direction without the lenght
-
   updateSpeedFactor(direction, delta);  
   const velocity = computeVelocity(speedFactor, direction, delta);
-
   //extract the actual position and compute the future one
   const pos = controls.getObject().position;
+  
   const futurePos = pos.clone().add(velocity);
 
   const playerSize = { x: 3, y : 3 , z: 2 };
@@ -182,33 +181,67 @@ export function getControls() {
   return controls;
 }
 
+export function fallFromSky(delta){
+
+  const controls = getControls();
+  const playerPos = controls.getObject();
+
+  //the player falls from y=100 according to the gravity acceleration and the speed
+  const velocity = new THREE.Vector3();
+  const gravity = new THREE.Vector3(0, -9.8, 0);
+
+  velocity.addScaledVector(gravity, delta* player.SPEED);
+ 
+  if(playerPos.position.y > 3){
+      playerPos.position.add(velocity);
+  }
+}
+
 export function updateLevel(){
   if(player.kill == 2 && levels.currentLevel == 1){
-    levels.currentLevel = 2 ;    
+    levels.currentLevel = 2 ; 
+
+    const controls = getControls();
+    const playerPos = controls.getObject();    
+    playerPos.position.y = 100;
+
     showLevelTransition(levels.currentLevel);
-    zombieModel.userData.life = 20;
+    zombieModel.userData.life = zombieLife.level2;
     zombieModel.userData.damage = 3;
-    player.kill = 0;
+    zombies.forEach(z => updateZombieHealthbar(z));
+    player.kill = 0;    
     changeWeapon(scene);    
     startZombieWave(30);
     
     if(player.LIFE < 100){      
       player.LIFE = 100;
       updatePlayerLifeUI();
+      updateLowLifeBorder();
     }
   }
   if(player.kill == 5 && levels.currentLevel == 2){
     levels.currentLevel = 3;
+
+    const controls = getControls();
+    const playerPos = controls.getObject();
+    playerPos.position.y = 100;
+
     showLevelTransition(levels.currentLevel);
-    zombieModel.userData.life = 25;
+
+    zombieModel.userData.life = zombieLife.level3;
     zombieModel.userData.damage = 5;
+    zombies.forEach(z => updateZombieHealthbar(z));
+
     player.kill = 0;
+
     changeWeapon(scene);
     startZombieWave(40);
 
     if(player.LIFE < 100){      
       player.LIFE = 100;
       updatePlayerLifeUI();
+      updateLowLifeBorder();      
+      
     }
   }
   if(player.kill == 5 && levels.currentLevel == 3){
@@ -218,14 +251,15 @@ export function updateLevel(){
 
 export function zombieCollision(zombie, direction, distance){
 
-  const origin = zombie.mesh.position.clone();
-  origin.y += 1; // alza il punto per evitare attraversamento del pavimento
+  const origin = zombie.mesh.position;
+  //origin.y += 1; // alza il punto per evitare attraversamento del pavimento
 
-  const raycaster = new THREE.Raycaster(origin, direction.clone().normalize(), 5, distance);
+  const raycaster = new THREE.Raycaster();
+  raycaster.set(origin, direction.clone().normalize);
   const buildings = buildingsList.map(b => b.mesh); // oggetti fisici in scena
 
-  const hits = raycaster.intersectObjects(buildings, false);
-  return hits.length === 0;
+  const intersects = raycaster.intersectObjects(buildings, false);
+  return intersects;
 
 }
 
@@ -253,4 +287,15 @@ export function playerZombieCollision(playerPos){
     }
   }
   return stop;
+}
+
+export function playerJump(position, delta,){
+  const velocity = new THREE.Vector3();
+  const gravity = new THREE.Vector3(0, -9.8, 0);
+
+  velocity.addScaledVector(gravity, delta*player.SPEED);
+
+  if(position.y > 2){
+      position.add(velocity);
+  }
 }

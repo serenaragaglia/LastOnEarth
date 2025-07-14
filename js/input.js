@@ -1,4 +1,5 @@
-import { collectHeart, getControls } from './controls.js';
+import * as THREE from 'https://esm.sh/three@0.161.0';
+import { collectHeart, getControls, playerJump } from './controls.js';
 import { defaultFov, player, weapon, zoomedFov, levels } from './constants.js';
 import { updatePlayerLifeUI, updateLowLifeBorder, showLevelTransition } from './ui.js';
 import { hearts, shoot } from './action.js';
@@ -23,6 +24,23 @@ export function setupInput() {
       case 'KeyS': move.backward = false; break;
       case 'KeyA': move.left = false; break;
       case 'KeyD': move.right = false; break;
+    }
+  });
+}
+
+export let jumping = false;
+export function jumpKey(delta){
+  window.addEventListener('keydown', (e) => {
+    if (e.key === ' ') {
+      jumping = true;
+      const playerPos = getControls().getObject().position;
+      playerPos.y = 20;
+      playerJump(playerPos, delta);
+    }
+  });
+  window.addEventListener('keydown', (e) => {
+    if (e.key === ' ') {
+      jumping = false;
     }
   });
 }
@@ -86,12 +104,3 @@ document.addEventListener('mouseup' , (event) => {
   }
 });
 
-
-/*
-export const toggle = document.getElementById('toggleDayNight');
-  toggle.addEventListener('change', ()=> {
-    if(toggle == 0){ //if checked then night
-      targetTime = 0;
-    }
-    else targetTime = 1;  //otherwise day
-  });*/
