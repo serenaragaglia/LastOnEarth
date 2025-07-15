@@ -26,7 +26,7 @@ export async function init() {
 
   await SCENE.loadHeartModel();
 
-  SCENE.buildAbandonedTown(scene);
+
 
   SCENE.loadZombieModel().then((zombieModel) => {
   spawnRandomZombies(20, zombieModel);
@@ -38,6 +38,7 @@ export async function init() {
   await changeWeapon();
   recoverLife(scene);
   setupInput();
+  SCENE.buildAbandonedTown(scene);
 
   animate();
 }

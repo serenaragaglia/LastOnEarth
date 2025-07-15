@@ -249,7 +249,7 @@ export function updateLevel(){
   }
 }
 
-export function zombieCollision(zombie, direction, distance){
+export function zombieCollision(zombie, direction){
 
   const origin = zombie.mesh.position;
   //origin.y += 1; // alza il punto per evitare attraversamento del pavimento

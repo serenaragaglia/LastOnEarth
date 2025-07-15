@@ -3,7 +3,7 @@ import * as SkeletonUtils from './SkeletonUtils.js'
 import {getControls, collsionManagement, zombieAlert, getWeapon} from './controls.js';
 import {scene} from './main.js';
 import { updateLowLifeBorder, updatePlayerLifeUI } from './ui.js';
-import { createZombieMarker, heartModel, updateZombieMarker, zombieModel} from './scene.js';
+import { createZombieMarker, heartModel, updateZombieMarker, zombieMarkers, zombieModel} from './scene.js';
 import {buildingsList, player, COLORS, OPTIONS, waves, levels, zombieLife } from './constants.js';
 import { jumping } from './input.js';
 
@@ -375,6 +375,9 @@ export function updateZombies(delta){
     zombieSpawnAnimation(zombie, delta);
 
     if(zombie.life == 0){
+      //removeZombieMarker(zombie);
+      scene.remove(zombie.marker);
+      zombieMarkers.splice(i, 1);
       scene.remove(zombie.mesh);
       zombies.splice(i, 1);
       continue;

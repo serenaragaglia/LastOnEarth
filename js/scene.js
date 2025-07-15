@@ -2,7 +2,7 @@ import * as THREE from 'https://esm.sh/three@0.161.0';
 import { GLTFLoader } from 'https://esm.sh/three@0.161.0/examples/jsm/loaders/GLTFLoader.js';
 import {Sky} from './sky.js';
 import { buildingsList, OPTIONS, defaultFov, zombieLife} from './constants.js';
-import { scene, minimapScene } from './main.js';
+import { scene } from './main.js';
 import { getControls } from './controls.js';
 export let gun = null;
 export let shotgun = null;
@@ -332,11 +332,6 @@ export function updateSun(delta){
   }*/
 }
 
-export function createMinimapScene(){
-  const scene = new THREE.Scene();
-  return scene;
-}
-
 export function createMinimapCamera(){
   const camera = new THREE.OrthographicCamera(-50, 50, 50, -50, 0.1, 1000);
   camera.position.set(0, 100, 0);
@@ -364,12 +359,7 @@ export function updateMinimap(camera, playerMarker){
   playerMarker.position.set(player.x, 2, player.z);  
 
   camera.lookAt(player.x, 0, player.z);
-
-  //playerMarker.rotation.z = Math.PI / 2;
-  const axes  = new THREE.AxesHelper(10);
-  playerMarker.add(axes);
   
-
 }
 
 export function createPlayerMarker(){
@@ -399,8 +389,7 @@ export function updateZombieMarker(zombie){
   marker.position.set(zombie.mesh.position.x, 2, zombie.mesh.position.z);
 
   zombieMarkers.push(marker);
-  
- // return zombieMarkers;
+
 }
 
 //------------------------TOWN
@@ -451,11 +440,12 @@ function addSkyscraper(scene, position) {
 export function buildAbandonedTown(scene) {
   const gridCount = Math.floor((250 * 2) / OPTIONS.spacing);
   const placed = new Set();
+  const playerPos = getControls().getObject().position;
 
   for (let gx = -gridCount / 2; gx <= gridCount / 2; gx++) {
     for (let gz = -gridCount / 2; gz <= gridCount / 2; gz++) {
-      const x = gx * OPTIONS.spacing + (Math.random() - 0.5) * OPTIONS.spacing * 0.3;
-      const z = gz * OPTIONS.spacing + (Math.random() - 0.5) * OPTIONS.spacing * 0.3;
+      const x = gx * OPTIONS.spacing + (Math.random() - 0.5) * OPTIONS.spacing + playerPos.x *0.5;
+      const z = gz * OPTIONS.spacing + (Math.random() - 0.5) * OPTIONS.spacing + playerPos.z * 0.5;
       const dist = Math.sqrt(x * x + z * z);
 
       const isCenter = dist < OPTIONS.centerRadius;

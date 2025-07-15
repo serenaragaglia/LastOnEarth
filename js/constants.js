@@ -24,7 +24,7 @@ export const COLORS = {
 
 export const OPTIONS = {
   areaSize: 200,
-  spacing: 10,
+  spacing: 15,
   centerRadius: 10,
   innerDensity: 0.4,
   outerDensity: 0.2
