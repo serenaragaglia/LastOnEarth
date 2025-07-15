@@ -53,7 +53,7 @@ export async function loadGunModel(controls) {
     front.position.set(0.4, 0.5, 3);
     gun.add(front);
 
-    /*const axes = new THREE.AxesHelper(10); // lunghezza degli assi
+    /*const axes = new THREE.AxesHelper(10);
     front.add(axes);*/
   }, undefined, (err) => {
     console.error('Errore nel caricamento della pistola:', err);
@@ -75,7 +75,7 @@ export async function loadShotGunModel(controls) {
     shotgun.userData.damage = 3;
     shotgun.userData.hitDistance  = 4;
     shotgun.userData.bulletSpeed = 65;
-    shotgun.userData.bulletLife = 1;
+    shotgun.userData.bulletLife = 0.5;
     shotgun.userData.posRecoilY = 0.08;
     shotgun.userData.rotRecoilX = 0.4;
     shotgun.userData.rotRecoilZ = 0.08;
@@ -87,7 +87,7 @@ export async function loadShotGunModel(controls) {
     console.log(shotgun.position);
     console.log(front.position);
 
-    /*const axes = new THREE.AxesHelper(10); // lunghezza degli assi
+    /*const axes = new THREE.AxesHelper(10); 
     front.add(axes);*/
   }, undefined, (err) => {
     console.error('Errore nel caricamento della pistola:', err);
@@ -121,8 +121,8 @@ export async function loadSMGModel(controls) {
     console.log(smg.position);
     console.log(front.position);
 
-    const axes = new THREE.AxesHelper(10); // lunghezza degli assi
-    front.add(axes);
+    /*const axes = new THREE.AxesHelper(10);
+    front.add(axes);*/
   }, undefined, (err) => {
     console.error('Errore nel caricamento della pistola:', err);
   });
@@ -202,7 +202,7 @@ export function createScene() {
   //scene.background = new THREE.Color(COLORS.SKY);
   scene.background = null;
   const color = new THREE.Color('red');
-  scene.fog = new THREE.Fog(color, 50, 500);
+  scene.fog = new THREE.Fog(color, 0, 500);
   return scene;
 }
 
@@ -263,38 +263,6 @@ export function createLights(scene) {
   scene.add(ambient);
 }
 
-export function createStars(scene){
-  const geometry = new THREE.BufferGeometry();
-  const starsNumber = 1000;
-  const starPos = [];
-
-  for (let i = 0 ; i < starsNumber; i++){
-    const radius = 400 + Math.random() * 100;
-    const theta = Math.random() * 2 * Math.PI;
-    const phi = Math.acos(2 * Math.random() - 1);
-
-    const x = radius * Math.sin(phi) * Math.cos(theta); 
-    const y = radius * Math.sin(phi) * Math.sin(theta);
-    const z = radius * Math.cos(phi);
-
-    starPos.push(x, y , z);
-  }
-
-  geometry.setAttribute('position', new THREE.Float32BufferAttribute(starPos, 3));
-  const material = new THREE.PointsMaterial({
-    color : 0xffffff,
-    size : 0.7,
-    sizeAttenuation : true,
-    transparent : true,
-    opacity : 0
-  });
-
-  //console.log(material.opacity);
-  stars = new THREE.Points(geometry, material);
-  scene.add(stars);
-
-}
-
 export function createSky(scene){
   const sky = new Sky();
   sky.scale.setScalar(800);
@@ -305,8 +273,6 @@ export function createSky(scene){
   sky.material.uniforms['rayleigh'].value = 7;
   sky.material.uniforms['mieCoefficient'].value = 0.5;
   sky.material.uniforms['mieDirectionalG'].value = 0.7;
-  //createStars(scene);
-
   updateSun(0);
 }
 
@@ -332,11 +298,26 @@ export function updateSun(delta){
   }*/
 }
 
+//------------------------MINIMAP-----------------------
 export function createMinimapCamera(){
   const camera = new THREE.OrthographicCamera(-50, 50, 50, -50, 0.1, 1000);
   camera.position.set(0, 100, 0);
-  //camera.lookAt(0,0,0);
+  camera.lookAt(0,0,0);
+
+  const material = new THREE.LineBasicMaterial({color : 0xff0000});
+  const points = [];
+  points.push(new THREE.Vector3(-200, 0, 200));
+  points.push(new THREE.Vector3(200, 0, 200));
+  points.push(new THREE.Vector3(200, 0,-200));
+  points.push(new THREE.Vector3(-200, 0, -200));
+  points.push(new THREE.Vector3(-200, 0, 200));
+  const geometry = new THREE.BufferGeometry().setFromPoints(points);
+  const limits = new THREE.Line(geometry , material);
+  
   camera.up.set(0, 0, -1);
+  
+  scene.add(limits);
+  
   return camera;
 }
 
@@ -348,29 +329,32 @@ export function createMinimapRenderer() {
   return renderer;
 }
 
+export function createPlayerMarker(){
+  const geometry = new THREE.ConeGeometry(2, 5, 32);
+  const material = new THREE.MeshBasicMaterial({color : 0xf000f0});
+  const marker = new THREE.Mesh(geometry, material);
+  //marker.rotation.x = -Math.PI/2;
+  
+  scene.add(marker);
+  return marker;
+}
+
 export function updateMinimap(camera, playerMarker){
   const controls = getControls();
   const player = controls.getObject().position;
   const direction = new THREE.Vector3();
   
   controls.getObject().getWorldDirection(direction);
-
+  playerMarker.lookAt(player.x, 0, player.z);
   camera.position.set(player.x , 100, player.z);
   playerMarker.position.set(player.x, 2, player.z);  
 
+
+  
+  //playerMarker.rotation.z = -Math.PI/2;
+
   camera.lookAt(player.x, 0, player.z);
   
-}
-
-export function createPlayerMarker(){
-  const geometry = new THREE.ConeGeometry(2, 5, 32);
-  const material = new THREE.MeshBasicMaterial({color : 0xf000f0});
-  const marker = new THREE.Mesh(geometry, material);
-  marker.rotation.x = -Math.PI/2;
-  
-  //marker.position.set(0, 2, -1);
-  scene.add(marker);
-  return marker;
 }
 
 export function createZombieMarker(){
@@ -428,7 +412,6 @@ function addHouse(scene, position) {
   scene.add(house);
   addRoof(scene, house, size);
 }
-
 
 function addSkyscraper(scene, position) {
   const height = 15 + Math.random() * 10;

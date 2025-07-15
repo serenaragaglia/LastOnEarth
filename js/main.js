@@ -2,7 +2,7 @@ import * as SCENE from './scene.js';
 import { setupControls, updateControls, updateLevel, changeWeapon, fallFromSky } from './controls.js';
 import { jumpKey, recoverLife, setupInput, startGame } from './input.js';
 import {updateBullets, spawnRandomZombies, updateZombies, animateHeart, updateRecoil, updateSpawn} from './action.js';
-import { player } from './constants.js';
+import { showKill } from './ui.js';
 export let scene;
 export let camera, renderer, minimapScene;
 let minimapCamera, minimapRenderer, playerMarker;
@@ -63,7 +63,7 @@ function animate() {
   animateHeart(delta, scene);
   updateZombies(delta);
   updateSpawn(delta);
-
+  showKill();
   SCENE.updateMinimap(minimapCamera,playerMarker);
 
   SCENE.zombieMarkers.forEach(marker => marker.visible = true);

@@ -59,3 +59,8 @@ export function showLevelTransition(levelNumber) {
     div.classList.remove('fade-in');
   }, 2000); // visibile per 2 secondi (puoi regolare)
 }
+
+export function showKill(){
+  const div = document.getElementById('info');
+  div.textContent = `Kill : ${player.kill}`;
+}

@@ -171,7 +171,7 @@ export function updateControls(delta) {
   //block the position so the player can't go out of the map
   pos.x = THREE.MathUtils.clamp(pos.x, -OPTIONS.areaSize, OPTIONS.areaSize);
   pos.z = THREE.MathUtils.clamp(pos.z, -OPTIONS.areaSize, OPTIONS.areaSize);
-
+  
   weaponBobbing(speedFactor);
   let heartInRange = collectHeart(pos);
   showHintCollect(heartInRange);

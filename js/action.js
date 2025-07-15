@@ -52,7 +52,7 @@ export function bulletTrail(position){
     points: trailPoints,
     geometry,
     line : trailLine,
-    maxPoints : 20
+    maxPoints : 10 
   };
   return trail;                                              
 }
@@ -273,11 +273,11 @@ export function zombieDance(zombie, delta){
   const maxAngle = Math.PI/9;
 
   const targetLeft = Math.sin(zombie.walkTime) * maxAngle;
-  const targetRight = Math.cos(zombie.walkTime + 0.02) * maxAngle;
+  const targetRight = Math.sin(zombie.walkTime + 0.5) * maxAngle;
   const target = Math.cos(zombie.walkTime + 0.02) * maxAngle;
 
-  zombie.leftArmAngle = THREE.MathUtils.lerp(zombie.leftArmAngle, targetLeft, 0.2);
-  zombie.rightArmAngle = THREE.MathUtils.lerp(zombie.rightArmAngle, targetRight, 0.2);
+  zombie.leftArmAngle = THREE.MathUtils.lerp(zombie.rightArmAngle, targetRight, 0.2);
+  zombie.rightArmAngle = THREE.MathUtils.lerp(zombie.leftArmAngle, targetLeft, 0.2);
   zombie.midSpineAngle = THREE.MathUtils.lerp(zombie.midSpineAngle, target, 0.2);
 
   zombie.leftArm.rotation.y = zombie.rightArmAngle;
@@ -374,53 +374,44 @@ export function updateZombies(delta){
     updateZombieHealthbar(zombie);
     zombieSpawnAnimation(zombie, delta);
 
-    if(zombie.life == 0){
-      //removeZombieMarker(zombie);
-      scene.remove(zombie.marker);
-      zombieMarkers.splice(i, 1);
-      scene.remove(zombie.mesh);
-      zombies.splice(i, 1);
-      continue;
-    }
-    else{
-      updateZombieMarker(zombie);
-      const controls = getControls();
-      const playerPos = controls.getObject().position;
-      zombie.mesh.position.y = 0;
-      const dir = playerPos.clone().sub(zombie.mesh.position).normalize();
-      zombieDance(zombie, delta);
+    updateZombieMarker(zombie);
+    const controls = getControls();
+    const playerPos = controls.getObject().position;
+    zombie.mesh.position.y = 0;
+    const dir = playerPos.clone().sub(zombie.mesh.position).normalize();
+    zombieDance(zombie, delta);
 
-      //if the player is seen by the zombie, then this will follow him/her
-      zombieAlert(zombie, playerPos);
+    //if the player is seen by the zombie, then this will follow him/her
+    zombieAlert(zombie, playerPos);
+    
+    if(zombie.alert == false){
+      zombie.timer += delta;
+      let randomDir = zombie.target.clone().sub(zombie.mesh.position).normalize();
+      let futureRanPos = zombie.mesh.position.clone().addScaledVector(randomDir, zombie.speed * delta);        
+      futureRanPos.y = 0 ;
+
+      let collide = collsionManagement(futureRanPos, buildingsList, zombie.size);
       
-      if(zombie.alert == false){
-        zombie.timer += delta;
-        let randomDir = zombie.target.clone().sub(zombie.mesh.position).normalize();
-        let futureRanPos = zombie.mesh.position.clone().addScaledVector(randomDir, zombie.speed * delta);        
-        futureRanPos.y = 0 ;
-
-        let collide = collsionManagement(futureRanPos, buildingsList, zombie.size);
-        
-        //if more than 5s passed, change target
-        if(zombie.timer > 5 || collide == true){
-          zombie.target = generateRandomTarget(zombie.mesh.position);
-          zombie.timer = 0;
-        }else{
-          zombie.mesh.lookAt(zombie.target);
-          zombieWalk(zombie, futureRanPos, delta);          
-        }
-
+      //if more than 5s passed, change target
+      if(zombie.timer > 10 || collide == true){
+        zombie.target = generateRandomTarget(zombie.mesh.position);
+        zombie.timer = 0;
+      }else{
+        zombie.mesh.lookAt(zombie.target);
+        zombieWalk(zombie, futureRanPos, delta);          
       }
-      else if(zombie.alert == true){
-        zombie.mesh.lookAt(playerPos);
-        const zombieFuturePos = zombie.mesh.position.clone().addScaledVector(dir, zombie.speed * delta) ;
-        zombieFuturePos.y = 0;
-        let collideBuilding = collsionManagement(zombieFuturePos, buildingsList, zombie.size);
-        if(!collideBuilding && zombieFuturePos.distanceTo(playerPos) > 5){          
-          zombieRun(zombie, zombieFuturePos, delta);          
-        }
-      }     
+
     }
+    else if(zombie.alert == true){
+      zombie.mesh.lookAt(playerPos);
+      const zombieFuturePos = zombie.mesh.position.clone().addScaledVector(dir, zombie.speed * delta) ;
+      zombieFuturePos.y = 0;
+      let collideBuilding = collsionManagement(zombieFuturePos, buildingsList, zombie.size);
+      if(!collideBuilding && zombieFuturePos.distanceTo(playerPos) > 5){          
+        zombieRun(zombie, zombieFuturePos, delta);          
+      }
+    }     
+    
   }
 }
 
@@ -481,6 +472,8 @@ export function updateBullets(delta){
               zombie.life -= currentWeapon.userData.damage;
               console.log(zombie.life);
               if(zombie.life <= 0){
+                scene.remove(zombie.marker);
+                zombieMarkers.splice(zombieMarkers, i);
                 heartSpawn(scene, zombie.mesh.position);
                 player.kill++;
                 scene.remove(zombie.mesh);
