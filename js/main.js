@@ -53,7 +53,6 @@ function animate() {
   fallFromSky(delta);
 
   playerJump(delta);
-
   updateBullets(delta);
   updateRecoil(delta);
   animateHeart(delta, scene);

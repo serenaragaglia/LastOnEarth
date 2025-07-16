@@ -1,5 +1,5 @@
-import * as THREE from 'https://esm.sh/three@0.161.0';
-import { collectHeart, getControls, playerJump, resetJumpTime, setJumpFlag, jumping } from './controls.js';
+
+import { collectHeart, getControls, resetJumpTime, setJumpFlag, jumping } from './controls.js';
 import { defaultFov, player, weapon, zoomedFov, levels } from './constants.js';
 import { updatePlayerLifeUI, updateLowLifeBorder, showLevelTransition } from './ui.js';
 import { hearts, shoot } from './action.js';
@@ -49,13 +49,12 @@ export function startGame(){
     if (e.key === 'Enter') {
       document.getElementById('startScreen').style.display = 'none';
       showLevelTransition(levels.currentLevel);
-      //init(); // ← avvia il gioco
     }
   })
 }
 
 window.restartGame = function () {
-  location.reload(); // oppure puoi resettare via codice senza ricaricare
+  location.reload();
 }
 
 export function recoverLife(scene){

@@ -193,6 +193,10 @@ export function spawnZombie(position) {
   const rightArm = zombieInstance.getObjectByName('mixamorig5RightArm');
   const lowSpine = zombieInstance.getObjectByName('mixamorig5Spine');
   const midSpine = zombieInstance.getObjectByName('mixamorig5Spine1');
+
+  const rightUpLeg = zombieInstance.getObjectByName('mixamorig5RightUpLeg');
+  const leftUpLeg = zombieInstance.getObjectByName('mixamorig5LeftUpLeg');
+
   const marker = createZombieMarker();
  
   const zombie = {
@@ -204,8 +208,13 @@ export function spawnZombie(position) {
     boundingBox,
     rightLeg,
     leftLeg,
+
+    rightUpLeg,
+    leftUpLeg,
+
     leftArm,
     rightArm,
+
     lowSpine,
     midSpine,  
 
@@ -231,7 +240,6 @@ export function spawnZombie(position) {
 
   };
 
-  //zombie.mesh.castShadow = true;
   zombie.leftArm.rotation.z = Math.PI/2;
   zombie.rightArm.rotation.z = -Math.PI/2;
   //zombie.mesh.rotation.z = 0 ;
@@ -276,9 +284,10 @@ export function zombieDance(zombie, delta){
 
   const maxAngle = Math.PI/9;
 
+  //sin and cos are used to have a smooth loop
   const targetLeft = Math.sin(zombie.walkTime) * maxAngle;
-  const targetRight = Math.sin(zombie.walkTime + 0.5) * maxAngle;
-  const target = Math.cos(zombie.walkTime + 0.02) * 0.2;
+  const targetRight = Math.sin(zombie.walkTime + 0.5) * maxAngle; //the right arm is slightly off-phase
+  const target = Math.cos(zombie.walkTime + 0.02) * maxAngle;
 
   zombie.leftArmAngle = THREE.MathUtils.lerp(zombie.rightArmAngle, targetRight, zombie.walkTime/1000);
   zombie.rightArmAngle = THREE.MathUtils.lerp(zombie.leftArmAngle, targetLeft, zombie.walkTime/1000);
@@ -291,12 +300,12 @@ export function zombieDance(zombie, delta){
 }
 
 export function zombieWalk(zombie, futurePos, delta){
-  zombie.walkTime += delta * zombie.speed * 2;
+  zombie.walkTime += delta * zombie.speed * 1.5 ; //to make them go faster we can multiply this value
 
-  const maxAngle = Math.PI/9;
+  const maxAngle = Math.PI/6;
 
   const targetLeft = Math.sin(zombie.walkTime) * maxAngle;
-  const targetRight = Math.cos(zombie.walkTime + 0.05) * maxAngle;
+  const targetRight = Math.cos(zombie.walkTime + 0.2) * maxAngle;
 
   zombie.leftLegAngle = THREE.MathUtils.lerp(zombie.leftLegAngle, targetLeft, zombie.walkTime/1000);
   zombie.rightLegAngle = THREE.MathUtils.lerp(zombie.rightLegAngle, targetRight, zombie.walkTime/1000);
@@ -304,13 +313,16 @@ export function zombieWalk(zombie, futurePos, delta){
   zombie.leftLeg.rotation.x = zombie.leftLegAngle;
   zombie.rightLeg.rotation.x = zombie.rightLegAngle;
 
+  zombie.leftUpLeg.rotation.x = zombie.leftLegAngle;
+  zombie.rightUpLeg.rotation.x = zombie.rightLegAngle;
+
   zombie.mesh.position.copy(futurePos);
 }
 
 export function zombieRun(zombie, futurePos, delta){
   zombie.walkTime += delta * zombie.speed * 2;
 
-  const maxAngle = 0.8;
+  const maxAngle = Math.PI/4;
 
   const targetLeft = Math.sin(zombie.walkTime ) * maxAngle;
   const targetRight = Math.cos(zombie.walkTime + 0.02) * maxAngle;
@@ -320,6 +332,9 @@ export function zombieRun(zombie, futurePos, delta){
 
   zombie.leftLeg.rotation.x = zombie.leftLegAngle;
   zombie.rightLeg.rotation.x = zombie.rightLegAngle;
+
+  zombie.leftUpLeg.rotation.x = zombie.leftLegAngle;
+  zombie.rightUpLeg.rotation.x = zombie.rightLegAngle;
 
   zombie.mesh.position.copy(futurePos);
 }
@@ -478,7 +493,7 @@ export function updateBullets(delta){
           //if the bullet hits the zombie his life decreases, according to the power of the gun that the player has !!!!!!!!!
             if(distance < hitRadius){
               zombie.life -= currentWeapon.userData.damage;
-              console.log(zombie.life);
+              //console.log(zombie.life);
               if(zombie.life <= 0){
                 scene.remove(zombie.marker);
                 zombieMarkers.splice(zombieMarkers, i);
@@ -569,4 +584,3 @@ export function easeOut(t){
 export function easeIn(t){
   return t * t * t ;
 }
-

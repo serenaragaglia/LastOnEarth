@@ -121,8 +121,8 @@ export async function loadSMGModel(controls) {
     console.log(smg.position);
     console.log(front.position);
 
-    const axes = new THREE.AxesHelper(10);
-    front.add(axes);
+    /*const axes = new THREE.AxesHelper(10);
+    front.add(axes);*/
   }, undefined, (err) => {
     console.error('Errore nel caricamento della pistola:', err);
   });
@@ -131,7 +131,7 @@ export async function loadSMGModel(controls) {
 
 export async function loadZombieModel() {
   const loader = new GLTFLoader();
-
+//the promise is a container that represent a future value
   return new Promise((resolve, reject) => {
     loader.load('./models/zombie.glb',
       (gltf) => {
@@ -149,12 +149,12 @@ export async function loadZombieModel() {
         zombieModel.userData.damage = 10;     
         /*const axes = new THREE.AxesHelper(10);
         zombieModel.add(axes);*/        
-        resolve(zombieModel);
+        resolve(zombieModel); //callback if the zombie is correctly loaded
       },
       undefined,
       (err) => {
-        console.error('Errore nel caricamento dello zombie:', err);
-        reject(err);
+        console.error('Problem with zombie model', err);
+        reject(err); //callback if there is an error
       }
     );
   });
@@ -188,7 +188,7 @@ export async function loadHeartModel() {
       },
       undefined,
       (err) => {
-        console.error('Errore nel caricamento dello zombie:', err);
+        console.error('Problemi with heart model:', err);
         reject(err);
       }
     );
@@ -297,8 +297,9 @@ export function createMinimapCamera(){
   camera.position.set(0, 100, 0);
   camera.lookAt(0,0,0);
 
+  //Draw the border line in which the play has to remain
   const material = new THREE.LineBasicMaterial({color : 0xff0000});
-  const points = [];
+  const points = [];  
   points.push(new THREE.Vector3(-200, 0, 200));
   points.push(new THREE.Vector3(200, 0, 200));
   points.push(new THREE.Vector3(200, 0,-200));
@@ -307,6 +308,7 @@ export function createMinimapCamera(){
   const geometry = new THREE.BufferGeometry().setFromPoints(points);
   const limits = new THREE.Line(geometry , material);
   
+  //in this way we set the z axes, in a way that from the minimap we can see the scene from above. 
   camera.up.set(0, 0, -1);
   
   scene.add(limits);

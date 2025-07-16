@@ -86,8 +86,7 @@ function weaponBobbing(speedFactor) {
 
 export function isColliding(firstObjPos, firstObjSize, secObjPos, secObjSize){
     if(
-      Math.abs(firstObjPos.x - secObjPos.x) < (firstObjSize.x / 2 + secObjSize.x / 2 ) &&
-      //Math.abs(firstObjPos.y - secObjPos.y) < (firstObjSize.y / 2 + secObjSize.y / 2 ) &&
+      Math.abs(firstObjPos.x - secObjPos.x) < (firstObjSize.x / 2 + secObjSize.x / 2 ) &&      
       Math.abs(firstObjPos.z - secObjPos.z) < (firstObjSize.z / 2 + secObjSize.z / 2 )
     )
       return true;
@@ -120,18 +119,19 @@ export function updateSpeedFactor(dir, d){
 
 export function computeVelocity(speedFactor, dir, d){
   const vel = new THREE.Vector3();
-
   //to get where the player is watching, so the direction in which the camera is pointing
   const front = new THREE.Vector3();
   controls.getDirection(front); //controls will insert in front the direction in which the player is watching
   front.y = 0; //we are ignoring the height because we need only the front direction
   front.normalize();
 
-  //to compute the relative right, becuase the player moves
+  //to obtain the lateral direction in which the player is moving
   const right = new THREE.Vector3().crossVectors(front, controls.getObject().up).normalize();
 
   const realSpeed = player.SPEED * speedFactor;
+  //to let the player move both froward and bacward
   vel.addScaledVector(front, dir.z * realSpeed * d);
+  //to move left and right
   vel.addScaledVector(right, dir.x * realSpeed * d);
   return vel;
 }
@@ -199,6 +199,7 @@ export function fallFromSky(delta){
 }
 
 export function updateLevel(){
+  //first level
   if(player.kill == 5 && levels.currentLevel == 1){
     levels.currentLevel = 2 ; 
 
@@ -220,6 +221,7 @@ export function updateLevel(){
       updateLowLifeBorder();
     }
   }
+  //second level
   if(player.kill == 5 && levels.currentLevel == 2){
     levels.currentLevel = 3;
 
@@ -245,24 +247,25 @@ export function updateLevel(){
       
     }
   }
+  //third level
   if(player.kill == 5 && levels.currentLevel == 3){
     endGame();
   }
 }
 
+/*
 export function zombieCollision(zombie, direction){
 
   const origin = zombie.mesh.position;
-  //origin.y += 1; // alza il punto per evitare attraversamento del pavimento
 
   const raycaster = new THREE.Raycaster();
   raycaster.set(origin, direction.clone().normalize);
-  const buildings = buildingsList.map(b => b.mesh); // oggetti fisici in scena
+  const buildings = buildingsList.map(b => b.mesh);
 
   const intersects = raycaster.intersectObjects(buildings, false);
   return intersects;
 
-}
+}*/
 
 export function zombieAlert(zombie, playerPos){
   const dist = zombie.mesh.position.distanceTo(playerPos);

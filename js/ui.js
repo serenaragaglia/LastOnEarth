@@ -37,12 +37,12 @@ export function showHintCollect(heartInRange){
 export function endGame() {
   //isGameRunning = false;
 
-  // Sblocca i controlli e mostra il cursore
+  //Unlock controls and cursor
   const controls = getControls();
   controls.locked = false;
   document.exitPointerLock?.();
 
-  // Mostra la schermata HTML
+  //shows html screen
   const screen = document.getElementById('win-screen');
   screen.classList.remove('hidden');
   screen.classList.add('active');
@@ -54,10 +54,10 @@ export function showLevelTransition(levelNumber) {
   
   div.classList.add('fade-in');
 
-  // Dopo 2 secondi, inizia il fade-out
+  //after two secodns start the fade out
   setTimeout(() => {
     div.classList.remove('fade-in');
-  }, 2000); // visibile per 2 secondi (puoi regolare)
+  }, 3000);
 }
 
 export function showKill(){
