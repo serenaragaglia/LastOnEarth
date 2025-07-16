@@ -1,5 +1,5 @@
 import * as THREE from 'https://esm.sh/three@0.161.0';
-import { collectHeart, getControls, playerJump } from './controls.js';
+import { collectHeart, getControls, playerJump, resetJumpTime, setJumpFlag, jumping } from './controls.js';
 import { defaultFov, player, weapon, zoomedFov, levels } from './constants.js';
 import { updatePlayerLifeUI, updateLowLifeBorder, showLevelTransition } from './ui.js';
 import { hearts, shoot } from './action.js';
@@ -28,22 +28,21 @@ export function setupInput() {
   });
 }
 
-export let jumping = false;
-export function jumpKey(delta){
-  window.addEventListener('keydown', (e) => {
+window.addEventListener('keydown', (e) => {
     if (e.key === ' ') {
-      jumping = true;
-      const playerPos = getControls().getObject().position;
-      playerPos.y = 20;
-      playerJump(playerPos, delta);
+      if ( !jumping )
+      {
+        setJumpFlag(true);
+        resetJumpTime();
+      }
     }
-  });
-  window.addEventListener('keydown', (e) => {
+});
+window.addEventListener('keyup', (e) => {
     if (e.key === ' ') {
-      jumping = false;
+      //jumping = false;
     }
-  });
-}
+});
+
 
 export function startGame(){
   window.addEventListener('keydown', (e) => {

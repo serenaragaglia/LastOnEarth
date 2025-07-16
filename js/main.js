@@ -1,6 +1,6 @@
 import * as SCENE from './scene.js';
-import { setupControls, updateControls, updateLevel, changeWeapon, fallFromSky } from './controls.js';
-import { jumpKey, recoverLife, setupInput, startGame } from './input.js';
+import { setupControls, updateControls, updateLevel, changeWeapon, fallFromSky, playerJump } from './controls.js';
+import { recoverLife, setupInput, startGame } from './input.js';
 import {updateBullets, spawnRandomZombies, updateZombies, animateHeart, updateRecoil, updateSpawn} from './action.js';
 import { showKill } from './ui.js';
 export let scene;
@@ -19,19 +19,11 @@ export async function init() {
   SCENE.createLights(scene);
   SCENE.createSky(scene);
 
-  //minimapScene = SCENE.createMinimapScene();
   minimapCamera = SCENE.createMinimapCamera();
   minimapRenderer = SCENE.createMinimapRenderer();
   playerMarker = SCENE.createPlayerMarker();
 
   await SCENE.loadHeartModel();
-
-
-
-  SCENE.loadZombieModel().then((zombieModel) => {
-  spawnRandomZombies(20, zombieModel);
-  });
-
 
   setupControls(camera, scene, renderer.domElement);
 
@@ -39,6 +31,9 @@ export async function init() {
   recoverLife(scene);
   setupInput();
   SCENE.buildAbandonedTown(scene);
+  SCENE.loadZombieModel().then((zombieModel) => {
+    spawnRandomZombies(10, zombieModel);
+  });
 
   animate();
 }
@@ -56,7 +51,8 @@ function animate() {
 
   updateLevel();
   fallFromSky(delta);
-  jumpKey(delta);
+
+  playerJump(delta);
 
   updateBullets(delta);
   updateRecoil(delta);
@@ -67,9 +63,11 @@ function animate() {
   SCENE.updateMinimap(minimapCamera,playerMarker);
 
   SCENE.zombieMarkers.forEach(marker => marker.visible = true);
+  playerMarker.visibile = true;
   minimapRenderer.render(scene, minimapCamera);
 
   SCENE.zombieMarkers.forEach(marker => marker.visible = false);
+  playerMarker.visible = false;
   renderer.render(scene, camera);
 
 

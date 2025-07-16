@@ -102,7 +102,7 @@ export async function loadSMGModel(controls) {
     smg.scale.set(2, 2, 2);
 
     smg.rotation.y= Math.PI;
-    smg.position.set(-0.4, 2.2, -0.7); //position wrt camera
+    smg.position.set(-0.4, 3, -0.7); //position wrt camera
     controls.getObject().add(smg);  
 
     smg.userData.weaponType = 'smg';
@@ -116,13 +116,13 @@ export async function loadSMGModel(controls) {
 
     const front = new THREE.Object3D(); 
     front.name = 'front';
-    front.position.set(0, 0.1, -1);
+    front.position.set(0, 0.1, 0.2);
     smg.add(front);
     console.log(smg.position);
     console.log(front.position);
 
-    /*const axes = new THREE.AxesHelper(10);
-    front.add(axes);*/
+    const axes = new THREE.AxesHelper(10);
+    front.add(axes);
   }, undefined, (err) => {
     console.error('Errore nel caricamento della pistola:', err);
   });
@@ -269,7 +269,7 @@ export function createSky(scene){
   scene.add(sky);
   sun = new THREE.Vector3();
   skyValues = sky.material.uniforms;
-  sky.material.uniforms['turbidity'].value = 15;
+  sky.material.uniforms['turbidity'].value = 10;
   sky.material.uniforms['rayleigh'].value = 7;
   sky.material.uniforms['mieCoefficient'].value = 0.5;
   sky.material.uniforms['mieDirectionalG'].value = 0.7;
@@ -277,25 +277,18 @@ export function createSky(scene){
 }
 
 export function updateSun(delta){
-  //let time = performance.now() / 1000;
-  day +=  delta * 0.005;
-  if(day > 1) day -= 1;
+  //day it's a global variable that represents the phases of the day
+  day +=  delta * 0.001; //this incrementation gives the progress of the day
+  if(day > 1) day -= 1; //when the day gets to 1, we bring it down to re-start the loop
 
   //definition of sun position through the day
-  let phi = THREE.MathUtils.degToRad(THREE.MathUtils.lerp(0, 180, Math.sin(day * Math.PI)));
-  let theta= THREE.MathUtils.degToRad(THREE.MathUtils.lerp(0, 360, day));
+  let phi = THREE.MathUtils.degToRad(THREE.MathUtils.lerp(0, 180, Math.sin(day * Math.PI)));  //vertical inclination of the sun 
+  let theta= THREE.MathUtils.degToRad(THREE.MathUtils.lerp(0, 360, day)); //horizontal rotation
 
-  sun.setFromSphericalCoords(1, phi, theta);
-  skyValues.sunPosition.value.copy(sun);
-  sunLight.position.copy(sun);
-  //console.log(stars);
+  sun.setFromSphericalCoords(1, phi, theta); //converts the phi and theta in a cartesian coordinates
+  skyValues.sunPosition.value.copy(sun); //to update the uniforms of the sky and modify the lights and colors
+  sunLight.position.copy(sun); //moves the directional lights 
 
-  /*if(stars && (day < 0.25 || day > 0.75)){
-    let starsVisibility = Math.abs(Math.cos(day * Math.PI));
-    stars.material.opacity = 2;
-    console.log(stars);
-    stars.visible = starsVisibility > 0.01; 
-  }*/
 }
 
 //------------------------MINIMAP-----------------------
@@ -333,7 +326,6 @@ export function createPlayerMarker(){
   const geometry = new THREE.ConeGeometry(2, 5, 32);
   const material = new THREE.MeshBasicMaterial({color : 0xf000f0});
   const marker = new THREE.Mesh(geometry, material);
-  //marker.rotation.x = -Math.PI/2;
   
   scene.add(marker);
   return marker;
@@ -345,15 +337,13 @@ export function updateMinimap(camera, playerMarker){
   const direction = new THREE.Vector3();
   
   controls.getObject().getWorldDirection(direction);
+
   playerMarker.lookAt(player.x, 0, player.z);
   camera.position.set(player.x , 100, player.z);
-  playerMarker.position.set(player.x, 2, player.z);  
-
-
+  playerMarker.position.set(player.x, 50, player.z);  
   
-  //playerMarker.rotation.z = -Math.PI/2;
-
   camera.lookAt(player.x, 0, player.z);
+  playerMarker.visible = true;
   
 }
 
@@ -373,7 +363,6 @@ export function updateZombieMarker(zombie){
   marker.position.set(zombie.mesh.position.x, 2, zombie.mesh.position.z);
 
   zombieMarkers.push(marker);
-
 }
 
 //------------------------TOWN

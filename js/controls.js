@@ -7,7 +7,8 @@ import { ACCEL, DECAY, MAX_SPEED, player, buildingsList, OPTIONS, levels, weapon
 import { showHintCollect , endGame, updatePlayerLifeUI, showLevelTransition, updateLowLifeBorder} from './ui.js';
 import {  scene } from './main.js';
 
-
+let jumpTime = 0;
+export let jumping = false;
 let controls;   let speedFactor = 0;
 
 export function setupControls(camera, scene, domElement) {
@@ -138,7 +139,7 @@ export function computeVelocity(speedFactor, dir, d){
 export function collectHeart(playerPos){
   for(const heart of hearts){
     const distance = heart.position.distanceTo(playerPos);
-    if(distance < 2 && player.LIFE < 100){
+    if(distance < 4 && player.LIFE < 100){
       return heart;
     }
   }
@@ -192,13 +193,13 @@ export function fallFromSky(delta){
 
   velocity.addScaledVector(gravity, delta* player.SPEED);
  
-  if(playerPos.position.y > 3){
+  if(playerPos.position.y > 2.01){
       playerPos.position.add(velocity);
   }
 }
 
 export function updateLevel(){
-  if(player.kill == 2 && levels.currentLevel == 1){
+  if(player.kill == 5 && levels.currentLevel == 1){
     levels.currentLevel = 2 ; 
 
     const controls = getControls();
@@ -235,7 +236,7 @@ export function updateLevel(){
     player.kill = 0;
 
     changeWeapon(scene);
-    startZombieWave(40);
+    startZombieWave(30);
 
     if(player.LIFE < 100){      
       player.LIFE = 100;
@@ -289,13 +290,44 @@ export function playerZombieCollision(playerPos){
   return stop;
 }
 
-export function playerJump(position, delta,){
+export function playerJump(delta){
+  jumpTime += delta;
   const velocity = new THREE.Vector3();
   const gravity = new THREE.Vector3(0, -9.8, 0);
+  const position = getControls().getObject().position;
 
-  velocity.addScaledVector(gravity, delta*player.SPEED);
+  const maxDuration = 0.2;
 
-  if(position.y > 2){
-      position.add(velocity);
+  if(jumping == true ){
+
+    let target1 = THREE.MathUtils.lerp(2, 5, jumpTime/maxDuration);
+    target1 = Math.min(target1, 5);
+    console.log(target1);
+    position.y = target1;
+
+    if ( jumpTime/maxDuration >= 1 )
+      jumping = false;
   }
+  else if(jumping == false){
+    velocity.addScaledVector(gravity, -0.5 * delta * delta);
+
+    if(position.y > 2.01){
+      position.add(velocity);
+    }
+    else
+      position.y = 2;
+
+    console.log(position.y);
+  }
+
+}
+
+export function resetJumpTime()
+{
+  jumpTime = 0;
+}
+
+export function setJumpFlag(value)
+{
+  jumping = value;
 }
